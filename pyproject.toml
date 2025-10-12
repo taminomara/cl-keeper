@@ -1,0 +1,104 @@
+[project]
+name = "changelog-keeper"
+authors = [{name = "Tamika Nomara", email = "taminomara@gmail.com"}]
+description = "A CLI tool for keeping your changelogs"
+dynamic = ["version"]
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Framework :: Sphinx",
+    "Framework :: Sphinx :: Extension",
+    "Topic :: Software Development :: Documentation",
+    "Topic :: Documentation",
+    "Topic :: Documentation :: Sphinx",
+    "Intended Audience :: Developers",
+    "Typing :: Typed",
+]
+dependencies = [
+    "yuio>=2.0.0.b0,<3.0",
+    "giturlparse==0.12.0",
+    "markdown-it-py==3.0.0",
+    "mdformat==0.7.22",
+    "mdformat-gfm==0.4.1",
+    "mdformat_footnote==0.1.1",
+    "mdformat_frontmatter==2.0.8",
+    "mdformat_gfm_alerts==2.0.0",
+    "mdformat_tables==1.0.0",
+    "semver==3.0.4",
+]
+
+[dependency-groups]
+dev = [
+    "pytest-cov==7.0.0",
+    {include-group = "test"},
+    {include-group = "lint"},
+    {include-group = "doc"},
+]
+test = [
+    "pyright==1.1.406",
+    "pytest==8.4.2",
+    "sybil==9.2.0",
+]
+lint = [
+    "black==25.9.0",
+    "isort==6.1.0",
+    "pre-commit==4.3.0",
+]
+doc = [
+    "sybil==9.2.0",
+    "furo==2025.9.25",
+    "sphinx_design==0.6.1",
+]
+
+[project.urls]
+# Documentation = "https://sphinx-vhs.readthedocs.io/en/stable/"
+# Issues = "https://github.com/sphinx-contrib/vhs/issues/"
+# Source = "https://github.com/sphinx-contrib/vhs/"
+# Changelog = "https://github.com/sphinx-contrib/vhs/blob/main/CHANGELOG.md"
+
+[tool.setuptools.packages.find]
+include = ["changelog_keeper"]
+
+[project.scripts]
+chk = "changelog_keeper.app:main.run"
+
+[build-system]
+requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2", "wheel>=0.40"]
+
+[tool.setuptools_scm]
+write_to = "changelog_keeper/_version.py"
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = ["--strict-markers", "-p no:doctest"]
+testpaths = ["test", "changelog_keeper", "docs"]
+
+[tool.pyright]
+include = ["changelog_keeper"]
+exclude = ["**/__pycache__"]
+typeCheckingMode = "strict"
+pythonVersion = "3.12"
+pythonPlatform = "All"
+
+reportMissingParameterType = "none"
+reportUnknownParameterType = "none"
+reportUnknownVariableType = "none"
+reportUnknownMemberType = "none"
+reportUnknownArgumentType = "none"
+reportUnknownLambdaType = "none"
+reportUnnecessaryIsInstance = "none"
+reportUnnecessaryTypeIgnoreComment = "warning"
+
+[tool.isort]
+profile = "black"
+skip_gitignore = true
+known_third_party = ["vhs"]
+
+[tool.changelog_keeper]

@@ -11,7 +11,7 @@ from markdown_it.token import Token
 from markdown_it.tree import SyntaxTreeNode
 
 
-class _Version:
+class Version:
     def __lt__(self, other: _t.Self, /) -> bool: ...
     def __le__(self, other: _t.Self, /) -> bool: ...
     def __gt__(self, other: _t.Self, /) -> bool: ...
@@ -20,7 +20,13 @@ class _Version:
     def __ne__(self, other: object, /) -> bool: ...
 
 
-Version = _t.NewType("Version", _Version)
+@dataclass(kw_only=True)
+class RepoVersion:
+    version: str
+    parsed_version: Version | None
+    canonized_version: str
+    author_date: datetime.date
+    committer_date: datetime.date
 
 
 @dataclass(kw_only=True)
@@ -33,17 +39,6 @@ class Changelog:
         return [token for section in self.sections for token in section.to_tokens()]
 
 
-class SectionType(enum.Enum):
-    #: Section that contains some text that doesn't describe a release.
-    TRIVIA = "TRIVIA"
-
-    #: Section for unreleased changes.
-    UNRELEASED = "UNRELEASED"
-
-    #: Section for released changes.
-    RELEASE = "RELEASE"
-
-
 @dataclass(kw_only=True)
 class Section:
     """
@@ -51,35 +46,35 @@ class Section:
 
     """
 
-    #: Section type.
-    type: SectionType = SectionType.TRIVIA
-
     #: Section heading, can be missing for trivia sections.
-    heading: SyntaxTreeNode | None = None
+    heading: SyntaxTreeNode | None
 
     #: Section content.
-    subsections: list[SubSection] = dataclasses.field(default_factory=list)
+    subsections: list[SubSection]
 
-    #: Version string extracted from the heading, only set in release sections.
-    version: str | None = None
+    def what(self) -> str:
+        return "trivia section"
 
-    #: Parsed version string, can be absent if `version` failed to parse.
-    parsed_version: Version | None = None
+    def is_trivia(self) -> bool:
+        return not isinstance(self, (ReleaseSection, UnreleasedSection))
 
-    #: Link attached to version string, if there was any.
-    version_link: str | None = None
+    def is_release(self) -> bool:
+        return isinstance(self, ReleaseSection)
 
-    #: Link label attached to version string, if there was any.
-    version_label: str | None = None
+    def as_release(self) -> ReleaseSection | None:
+        if isinstance(self, ReleaseSection):
+            return self
+        else:
+            return None
 
-    #: Known release date, either extracted from heading or from git metadata.
-    release_date: datetime.date | None = None
+    def is_unreleased(self) -> bool:
+        return isinstance(self, UnreleasedSection)
 
-    #: Formatted release date, possible an invalid one.
-    release_date_fmt: str | None = None
-
-    #: Heading text that was found after release version and date.
-    release_comment: str | None = None
+    def as_unreleased(self) -> UnreleasedSection | None:
+        if isinstance(self, UnreleasedSection):
+            return self
+        else:
+            return None
 
     @property
     def map(self) -> tuple[int, int] | None:
@@ -103,6 +98,48 @@ class Section:
             yield from self.heading.walk()
         for subsection in self.subsections:
             yield from subsection.walk()
+
+
+@dataclass(kw_only=True)
+class UnreleasedSection(Section):
+    #: Link attached to version string, if there was any.
+    version_link: str | None
+
+    #: Link label attached to version string, if there was any.
+    version_label: str | None
+
+    def what(self) -> str:
+        return "unreleased section"
+
+
+@dataclass(kw_only=True)
+class ReleaseSection(Section):
+    #: Version string extracted from the heading, only set in release sections.
+    version: str
+
+    #: Parsed version suitable for ordering, can be absent if `version` failed to parse.
+    parsed_version: Version | None
+
+    #: Canonized version suitable for comparing for equality.
+    canonized_version: str
+
+    #: Link attached to version string, if there was any.
+    version_link: str | None
+
+    #: Link label attached to version string, if there was any.
+    version_label: str | None
+
+    #: Known release date, either extracted from heading or from git metadata.
+    release_date: datetime.date | None
+
+    #: Formatted release date, possible an invalid one.
+    release_date_fmt: str | None
+
+    #: Heading text that was found after release version and date.
+    release_comment: str | None
+
+    def what(self) -> str:
+        return f"release `{self.version}`"
 
 
 class SubSectionType(enum.Enum):

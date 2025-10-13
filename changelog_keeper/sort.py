@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 import typing as _t
 
-from changelog_keeper.model import Section, SectionType, SubSection
+from changelog_keeper.model import Section, SubSection
 from changelog_keeper.typing import Ord, SupportsPos
 
 
@@ -26,13 +26,12 @@ def sorted_subsections(subsections: _t.Iterable[SubSection]):
 
 
 def _sections_key(section: Section):
-    match section.type:
-        case SectionType.TRIVIA:
-            return None
-        case SectionType.UNRELEASED:
-            return (1, None)
-        case SectionType.RELEASE:
-            return (0, section.parsed_version) if section.parsed_version else None
+    if section.is_unreleased():
+        return (1, None)
+    elif release := section.as_release():
+        return (0, release.parsed_version) if release.parsed_version else None
+    else:
+        return None
 
 
 def sorted_by_key[T: SupportsPos, K: Ord](

@@ -4,9 +4,10 @@ import pathlib
 import giturlparse
 import yuio.git
 
-from changelog_keeper.config import LinkTemplates, ReleaseLinkPreset
-from changelog_keeper.context import Context, IssueScope, IssueSeverity
-from changelog_keeper.parse import parse_version
+from changelog_keeper.config import IssueCode, LinkTemplates, ReleaseLinkPreset
+from changelog_keeper.context import Context, IssueScope
+from changelog_keeper.model import RepoVersion
+from changelog_keeper.parse import canonize_version, parse_version
 
 logger = logging.getLogger(__name__)
 
@@ -49,20 +50,30 @@ def detect_origin(root: pathlib.Path) -> LinkTemplates | None:
             return None
 
 
-def get_repo_versions(root: pathlib.Path, ctx: Context) -> dict[str, yuio.git.Commit]:
+def get_repo_versions(root: pathlib.Path, ctx: Context) -> dict[str, RepoVersion]:
     repo = yuio.git.Repo(root)
-    repo_versions: dict[str, yuio.git.Commit] = {}
+    repo_versions: dict[str, RepoVersion] = {}
     for commit in repo.log("--tags", "--no-walk"):
         for tag in commit.tags:
             if tag.startswith(ctx.config.tag_prefix):
                 version = tag[len(ctx.config.tag_prefix) :]
-                if not parse_version(version, ctx):
+                parsed_version = parse_version(version, ctx.config)
+                if parsed_version is None:
                     ctx.issue(
+                        IssueCode.INVALID_TAG,
                         "Tag %s doesn't doesn't follow %s specification.",
                         tag,
                         ctx.config.version_format.value,
                         scope=IssueScope.EXTERNAL,
-                        severity=IssueSeverity.WEAK_WARNING,
                     )
-                repo_versions[version] = commit
+                canonized_version = (
+                    canonize_version(parsed_version, ctx.config) or version
+                )
+                repo_versions[canonized_version] = RepoVersion(
+                    version=version,
+                    parsed_version=parsed_version,
+                    canonized_version=canonized_version,
+                    author_date=commit.author_datetime.date(),
+                    committer_date=commit.committer_datetime.date(),
+                )
     return repo_versions

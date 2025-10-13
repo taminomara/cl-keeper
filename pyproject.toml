@@ -32,6 +32,7 @@ dependencies = [
     "mdformat_gfm_alerts==2.0.0",
     "mdformat_tables==1.0.0",
     "semver==3.0.4",
+    "packaging==25.0",
 ]
 
 [dependency-groups]
@@ -93,7 +94,6 @@ reportUnknownVariableType = "none"
 reportUnknownMemberType = "none"
 reportUnknownArgumentType = "none"
 reportUnknownLambdaType = "none"
-reportUnnecessaryIsInstance = "none"
 reportUnnecessaryTypeIgnoreComment = "warning"
 
 [tool.isort]
@@ -102,3 +102,4 @@ skip_gitignore = true
 known_third_party = ["vhs"]
 
 [tool.changelog_keeper]
+version_format = "python-semver"

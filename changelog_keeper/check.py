@@ -1,27 +1,28 @@
 from __future__ import annotations
 
+import re
 import typing as _t
 
-import yuio.git
-
-from changelog_keeper.context import Context, IssueScope, IssueSeverity
+from changelog_keeper.context import Context, IssueCode, IssueScope
 from changelog_keeper.fix import make_link_for_section
 from changelog_keeper.model import (
     Changelog,
+    ReleaseSection,
+    RepoVersion,
     Section,
-    SectionType,
-    SubSection,
     SubSectionType,
+    UnreleasedSection,
 )
 
 
 def check(
-    changelog: Changelog, ctx: Context, repo_versions: dict[str, yuio.git.Commit] | None
+    changelog: Changelog, ctx: Context, repo_versions: dict[str, RepoVersion] | None
 ):
     check_duplicates(changelog.sections, ctx)
     found_unordered_sections = check_order(changelog.sections, ctx)
     check_links(
         changelog.sections,
+        repo_versions,
         ctx,
         not found_unordered_sections,
     )
@@ -36,41 +37,39 @@ def check_duplicates(sections: _t.Iterable[Section], ctx: Context):
     seen_versions: set[str] = set()
 
     for section in sections:
-        match section.type:
-            case SectionType.TRIVIA:
-                continue
-            case SectionType.UNRELEASED:
-                if seen_unreleased:
-                    ctx.issue(
-                        "Found multiple sections for unreleased changes.", pos=section
-                    )
-                seen_unreleased = True
-            case SectionType.RELEASE:
-                if section.version in seen_versions:
-                    ctx.issue(
-                        "Found multiple sections for release `%s`.",
-                        section.version,
-                        pos=section,
-                    )
-                if section.version:
-                    seen_versions.add(section.version)
-        check_duplicates_in_subsections(section.subsections, section.version, ctx)
+        if section.is_unreleased():
+            if seen_unreleased:
+                ctx.issue(
+                    IssueCode.DUPLICATE_RELEASES,
+                    "Found multiple sections for unreleased changes.",
+                    pos=section,
+                )
+            seen_unreleased = True
+            check_duplicates_in_subsections(section, ctx)
+        elif release := section.as_release():
+            if release.canonized_version in seen_versions:
+                ctx.issue(
+                    IssueCode.DUPLICATE_RELEASES,
+                    "Found multiple sections for release `%s`.",
+                    release.version,
+                    pos=section,
+                )
+            seen_versions.add(release.canonized_version)
+            check_duplicates_in_subsections(section, ctx)
 
 
-def check_duplicates_in_subsections(
-    subsections: _t.Iterable[SubSection], version: str | None, ctx: Context
-):
+def check_duplicates_in_subsections(section: Section, ctx: Context):
     seen_categories: set[str] = set()
-    for subsection in subsections:
+    for subsection in section.subsections:
         match subsection.type:
             case SubSectionType.TRIVIA:
                 pass
             case SubSectionType.CHANGES:
                 if subsection.category in seen_categories:
                     ctx.issue(
-                        "Found multiple sub-sections for `%s` category in release `%s`.",
+                        IssueCode.DUPLICATE_CHANGE_CATEGORIES,
+                        f"Found multiple sub-sections for `%s` category in {section.what()}.",
                         subsection.category,
-                        version,
                         pos=subsection,
                     )
                 else:
@@ -80,12 +79,13 @@ def check_duplicates_in_subsections(
 def check_order(sections: list[Section], ctx: Context):
     if (
         not sections
-        or sections[0].type != SectionType.TRIVIA
+        or sections[0].is_trivia()
         or not sections[0].subsections
         or not sections[0].subsections[0].content
         or sections[0].subsections[0].content[0].tag != "h1"
     ):
         ctx.issue(
+            IssueCode.GENERAL_FORMATTING_ERROR,
             "Changelog must start with a first level heading.",
             pos=sections[0] if sections else None,
         )
@@ -93,41 +93,38 @@ def check_order(sections: list[Section], ctx: Context):
     last_version = None
     found_unordered_sections = False
     for section in sections:
-        match section.type:
-            case SectionType.TRIVIA:
-                continue
-            case SectionType.UNRELEASED:
-                if last_version is not None:
+        if section.is_unreleased():
+            if last_version is not None:
+                ctx.issue(
+                    IssueCode.RELEASE_ORDERING,
+                    "Section for unreleased changes must be first in the changelog.",
+                    pos=section,
+                )
+            check_order_in_subsection(section, ctx)
+        elif release := section.as_release():
+            if (
+                last_version
+                and release.parsed_version
+                and last_version < release.parsed_version
+            ):
+                if not found_unordered_sections:
+                    # Don't spam too many warnings.
                     ctx.issue(
-                        "Section for unreleased changes must be first in the changelog.",
+                        IssueCode.RELEASE_ORDERING,
+                        "Sections are not ordered by release versions.",
                         pos=section,
                     )
-            case SectionType.RELEASE:
-                if (
-                    last_version
-                    and section.parsed_version
-                    and last_version < section.parsed_version
-                ):
-                    if not found_unordered_sections:
-                        # Don't spam too many warnings.
-                        ctx.issue(
-                            "Sections are not ordered by release versions.",
-                            pos=section,
-                        )
-                    found_unordered_sections = True
-                elif section.parsed_version is not None:
-                    last_version = section.parsed_version
-
-        check_order_in_subsection(section.subsections, section.version, ctx)
+                found_unordered_sections = True
+            elif release.parsed_version is not None:
+                last_version = release.parsed_version
+            check_order_in_subsection(section, ctx)
 
     return found_unordered_sections
 
 
-def check_order_in_subsection(
-    subsections: list[SubSection], version: str | None, ctx: Context
-):
+def check_order_in_subsection(section: Section, ctx: Context):
     last_sort_key = None
-    for subsection in subsections:
+    for subsection in section.subsections:
         match subsection.type:
             case SubSectionType.TRIVIA:
                 continue
@@ -138,8 +135,8 @@ def check_order_in_subsection(
                     and last_sort_key > subsection.sort_key
                 ):
                     ctx.issue(
-                        "Sub-sections in release `%s` are not ordered by preferred order.",
-                        version,
+                        IssueCode.CHANGE_CATEGORY_ORDERING,
+                        f"Sub-sections in {section.what()} are not ordered by preferred order.",
                         pos=subsection,
                     )
                     return
@@ -149,114 +146,120 @@ def check_order_in_subsection(
 
 def check_links(
     sections: list[Section],
+    repo_versions: dict[str, RepoVersion] | None,
     ctx: Context,
     can_trust_order: bool,
 ):
     if not ctx.config.add_release_link:
         for section in reversed(sections):
-            if section.type is SectionType.TRIVIA:
+            if not isinstance(section, (ReleaseSection, UnreleasedSection)):
                 continue
             if section.version_link is not None:
-                if section.type is SectionType.UNRELEASED:
-                    release_name = "unreleased section"
-                else:
-                    release_name = f"release `{section.version}`"
-                ctx.issue("Unexpected link for %s.", release_name, pos=section)
+                ctx.issue(
+                    IssueCode.UNEXPECTED_RELEASE_LINK,
+                    f"Unexpected link for {section.what()}.",
+                    pos=section,
+                )
         return
 
     prev_tag: str | None = None
     for section in reversed(sections):
-        if section.type is SectionType.TRIVIA:
+        if not isinstance(section, (ReleaseSection, UnreleasedSection)):
             continue
-        if section.type is SectionType.UNRELEASED and not can_trust_order:
+        if section.is_unreleased() and not can_trust_order:
             continue
 
-        canonical_link, prev_tag = make_link_for_section(section, prev_tag, ctx)
-
-        if section.type is SectionType.UNRELEASED:
-            release_name = "unreleased section"
-        else:
-            release_name = f"release `{section.version}`"
+        canonical_link, prev_tag = make_link_for_section(
+            section, prev_tag, repo_versions, ctx
+        )
 
         if canonical_link is None:
             if section.version_link is not None:
                 ctx.issue(
-                    f"Unexpected link for {release_name}.",
+                    IssueCode.UNEXPECTED_RELEASE_LINK,
+                    f"Unexpected link for {section.what()}.",
                     pos=section,
                 )
         else:
             if section.version_link is None:
                 if can_trust_order:
                     ctx.issue(
-                        f"Missing link for {release_name}, should be <c path>%s</c>.",
+                        IssueCode.MISSING_RELEASE_LINK,
+                        f"Missing link for {section.what()}, should be <c path>%s</c>.",
                         canonical_link,
                         pos=section,
                     )
                 else:
                     ctx.issue(
-                        f"Missing link for {release_name}.",
+                        IssueCode.MISSING_RELEASE_LINK,
+                        f"Missing link for {section.what()}.",
                         pos=section,
                     )
             elif section.version_link != canonical_link:
                 if can_trust_order:
                     ctx.issue(
-                        f"Incorrect link for {release_name}, should be <c path>%s</c>.",
+                        IssueCode.MISSING_RELEASE_LINK,
+                        f"Incorrect link for {section.what()}, should be <c path>%s</c>.",
                         canonical_link,
                         pos=section,
                     )
                 else:
                     ctx.issue(
-                        f"Potentially incorrect link for {release_name}.",
+                        IssueCode.INCORRECT_RELEASE_LINK,
+                        f"Potentially incorrect link for {section.what()}.",
                         pos=section,
-                        severity=IssueSeverity.WEAK_WARNING,
                     )
 
 
 def check_dates(
     sections: list[Section],
     ctx: Context,
-    repo_versions: dict[str, yuio.git.Commit] | None,
+    repo_versions: dict[str, RepoVersion] | None,
 ):
     for section in sections:
-        if section.type is not SectionType.RELEASE:
+        release = section.as_release()
+        if not release:
             continue
-        if ctx.config.add_release_date and section.release_date_fmt is None:
+        if ctx.config.add_release_date and release.release_date_fmt is None:
             ctx.issue(
+                IssueCode.MISSING_RELEASE_DATE,
                 "Missing date for release `%s`.",
-                section.version,
+                release.version,
                 pos=section,
             )
         elif (
             ctx.config.add_release_date
-            and repo_versions
-            and section.version is not None
-            and section.release_date is not None
-            and (commit := repo_versions.get(section.version))
+            and repo_versions is not None
+            and release.release_date is not None
+            and (data := repo_versions.get(release.canonized_version))
         ):
             if (
-                commit.author_datetime.date() != section.release_date
-                and commit.committer_datetime.date() != section.release_date
+                data.author_date != release.release_date
+                and data.committer_date != release.release_date
             ):
                 ctx.issue(
+                    IssueCode.INCORRECT_RELEASE_DATE,
                     "Release date for release `%s` is different from commit date `%s`.",
-                    section.version,
-                    commit.committer_datetime.date().isoformat(),
-                    pos=section,
-                    severity=IssueSeverity.WEAK_WARNING,
+                    release.version,
+                    data.committer_date.isoformat(),
+                    pos=release,
                 )
-        elif not ctx.config.add_release_date and section.release_date_fmt is None:
+        elif not ctx.config.add_release_date and release.release_date_fmt is None:
             ctx.issue(
+                IssueCode.UNEXPECTED_RELEASE_DATE,
                 "Unexpected release date for release `%s`.",
-                section.version,
-                pos=section,
+                release.version,
+                pos=release,
             )
 
 
 def check_section_content(sections: list[Section], ctx: Context):
     is_first_section = True
+    lower_bound = ctx.config.parsed_ignore_missing_releases_before
+    regex_bound = ctx.config.ignore_missing_releases_regexp
     for section in sections:
         nodes = section.walk()
-        if section.type is SectionType.TRIVIA and is_first_section:
+        if section.is_trivia() and is_first_section:
             try:
                 next(nodes)  # Skip first <h1>.
             except StopIteration:
@@ -264,50 +267,73 @@ def check_section_content(sections: list[Section], ctx: Context):
         is_first_section = False
         for node in nodes:
             if node.tag == "h1":
-                ctx.issue("Unexpected first level heading.", pos=node)
-        if section.type is SectionType.RELEASE:
+                ctx.issue(
+                    IssueCode.GENERAL_FORMATTING_ERROR,
+                    "Unexpected first level heading.",
+                    pos=node,
+                )
+        if release := section.as_release():
             if (
-                not section.subsections
-                and section.version
-                and not section.version.startswith("0.")
+                not release.subsections
+                and release.parsed_version is not None
+                and (lower_bound is None or release.parsed_version >= lower_bound)
+                and (regex_bound is None or not re.search(regex_bound, release.version))
             ):
                 ctx.issue(
+                    IssueCode.EMPTY_RELEASE,
                     "Section for release `%s` is empty.",
-                    section.version,
+                    release.version,
                     pos=section,
-                    severity=IssueSeverity.WEAK_WARNING,
                 )
-            for subsection in section.subsections:
+            for subsection in release.subsections:
                 if not subsection.content:
                     ctx.issue(
+                        IssueCode.EMPTY_CHANGE_CATEGORY,
                         "Sub-section `%s` for release `%s` is empty.",
                         subsection.category,
-                        section.version,
+                        release.version,
                         pos=section,
-                        severity=IssueSeverity.WEAK_WARNING,
                     )
                     break
 
 
 def check_tags(
-    sections: list[Section], ctx: Context, repo_versions: dict[str, yuio.git.Commit]
+    sections: list[Section], ctx: Context, repo_versions: dict[str, RepoVersion]
 ):
-    known_tags = set(repo_versions)
-    releases = set(section.version for section in sections if section.version)
-    if not_in_repo := releases - known_tags:
+    known_versions = set(repo_versions)
+    releases = set(
+        release.canonized_version
+        for section in sections
+        if (release := section.as_release())
+    )
+    if not_in_repo := releases - known_versions:
         ctx.issue(
+            IssueCode.MISSING_TAG_FOR_RELEASE,
             f"Missing tags for release{"" if len(not_in_repo) == 1 else "s"} "
             f"{_join_more(not_in_repo)}.",
             scope=IssueScope.EXTERNAL,
-            severity=IssueSeverity.WEAK_WARNING,
         )
-    if not_in_changelog := known_tags - releases:
+    lower_bound = ctx.config.parsed_ignore_missing_releases_before
+    regex_bound = ctx.config.ignore_missing_releases_regexp
+    not_in_changelog = []
+    for data in repo_versions.values():
+        if (
+            data.canonized_version not in releases
+            and data.parsed_version is not None
+            and (lower_bound is None or data.parsed_version >= lower_bound)
+            and (
+                regex_bound is None
+                or not re.search(regex_bound, data.canonized_version)
+            )
+        ):
+            not_in_changelog.append(data.version)
+    if not_in_changelog:
         ctx.issue(
+            IssueCode.MISSING_RELEASE_FOR_TAG,
             f"Missing changelog sections for "
             f"release{"" if len(not_in_changelog) == 1 else "s"} "
             f"{_join_more(not_in_changelog)}.",
             scope=IssueScope.EXTERNAL,
-            severity=IssueSeverity.WEAK_WARNING,
         )
 
 

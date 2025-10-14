@@ -169,7 +169,7 @@ def create_section(
         if heading_text != canonical_heading:
             ctx.issue(
                 IssueCode.UNRELEASED_HEADING_FORMAT,
-                "Heading for unreleased changes isn't properly formatted, should be `%s`.",
+                "Heading for unreleased changes isn't properly formatted, should be `%s`",
                 canonical_heading,
                 pos=section.heading,
             )
@@ -185,7 +185,7 @@ def create_section(
 
         ctx.issue(
             IssueCode.GENERAL_FORMATTING_ERROR,
-            "Changelog section doesn't contain a release version.",
+            "Changelog section doesn't contain a release version",
             pos=section.heading,
         )
 
@@ -197,7 +197,7 @@ def create_section(
     if parsed_version is None:
         ctx.issue(
             IssueCode.INVALID_VERSION,
-            "Version `%s` doesn't follow %s specification.",
+            "Version `%s` doesn't follow %s specification",
             version,
             ctx.config.version_format.value,
             pos=heading,
@@ -220,7 +220,7 @@ def create_section(
             release_date = None
             ctx.issue(
                 IssueCode.INVALID_RELEASE_DATE,
-                "Incorrect release date `%s`: %s.",
+                "Incorrect release date `%s`: %s",
                 release_date_fmt,
                 e,
                 pos=heading,
@@ -237,7 +237,7 @@ def create_section(
         if check_broken_link(prefix, suffix):
             ctx.issue(
                 IssueCode.RELEASE_HEADING_FORMAT,
-                "Can't resolve version's link.",
+                "Can't resolve version's link",
                 pos=heading,
             )
             suffix = suffix.lstrip().removeprefix("]")
@@ -254,7 +254,7 @@ def create_section(
         if check_broken_link(prefix, middle):
             ctx.issue(
                 IssueCode.RELEASE_HEADING_FORMAT,
-                "Can't resolve version's link.",
+                "Can't resolve version's link",
                 pos=heading,
             )
             found_unresolved_link = True
@@ -272,7 +272,7 @@ def create_section(
         if check_broken_link(middle, suffix):
             ctx.issue(
                 IssueCode.RELEASE_HEADING_FORMAT,
-                "Can't resolve version's link.",
+                "Can't resolve version's link",
                 pos=heading,
             )
             suffix = suffix.lstrip().removeprefix("]")
@@ -305,7 +305,7 @@ def create_section(
         if canonical_heading != heading_text:
             ctx.issue(
                 IssueCode.RELEASE_HEADING_FORMAT,
-                "Heading for release `%s` isn't properly formatted, should be `%s`.",
+                "Heading for release `%s` isn't properly formatted, should be `%s`",
                 section.version,
                 canonical_heading,
                 pos=section.heading,
@@ -344,7 +344,7 @@ def detect_subsection_metadata(subsection: SubSection, ctx: Context):
             if canonical_heading and canonical_heading != heading:
                 ctx.issue(
                     IssueCode.CHANGE_CATEGORY_HEADING_FORMAT,
-                    "Heading for change group isn't properly formatted, should be `%s`.",
+                    "Heading for change group isn't properly formatted, should be `%s`",
                     canonical_heading,
                     pos=subsection.heading,
                 )
@@ -360,7 +360,7 @@ def detect_subsection_metadata(subsection: SubSection, ctx: Context):
 
     ctx.issue(
         IssueCode.UNKNOWN_CHANGE_CATEGORY,
-        "Unknown change group `%s`.",
+        "Unknown change group `%s`",
         heading,
         pos=subsection.heading,
     )
@@ -494,9 +494,9 @@ def canonize_version(version: Version | None, config: Config) -> str | None:
             # Post-release
             if version.post is not None:
                 if version.pre is not None:
-                    parts.append(".")
+                    parts.append(".post")
                 else:
-                    parts.append("-")
+                    parts.append("-post")
                 parts.append(str(version.post))
 
             # Development release

@@ -40,10 +40,14 @@ def print_diff(l: str, r: str, path: pathlib.Path):
         )
     )
 
-    yuio.io.heading("Diff")
-    yuio.io.raw(
-        yuio.md.SyntaxHighlighter.get_highlighter("diff").highlight(
-            yuio.io.get_theme(),
-            diff,
+    yuio.io.heading("Dry-run diff")
+
+    if not diff:
+        yuio.io.info("Diff is empty")
+    else:
+        yuio.io.raw(
+            yuio.md.SyntaxHighlighter.get_highlighter("diff").highlight(
+                yuio.io.get_theme(),
+                diff,
+            )
         )
-    )

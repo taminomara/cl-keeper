@@ -34,12 +34,14 @@ class Context:
         path: pathlib.Path,
         src: str,
         config: Config,
+        strict: bool,
         link_templates: LinkTemplates,
     ) -> None:
         self.path = path
         self.src = src
         self.lines = self.src.splitlines()
         self.config = config
+        self.strict = strict
         self.link_templates = link_templates
         self._has_errors = False
         self._messages: list[
@@ -97,7 +99,7 @@ class Context:
             color, title = self._color_and_title(severity)
             if not color or not title:
                 continue
-            msg = f"<c note>[{code.value}]</c> {msg}"
+            msg += f" [{code.value}]"
             if pos != prev_pos:
                 self._print_source(prev_pos)
             if pos and (pos != prev_pos or title != prev_title):
@@ -134,7 +136,7 @@ class Context:
 
     def _up(self, severity: IssueSeverity) -> IssueSeverity:
         return IssueSeverity(
-            min(severity.value + self.config.strict, IssueSeverity.ERROR.value)
+            min(severity.value + self.strict, IssueSeverity.ERROR.value)
         )
 
     @staticmethod

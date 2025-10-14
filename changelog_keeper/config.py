@@ -146,6 +146,8 @@ class IssueCode(enum.Enum):
                 return IssueSeverity.WEAK_WARNING
             case self.MISSING_TAG_FOR_RELEASE:
                 return IssueSeverity.WEAK_WARNING
+            case self.RELEASE_ORDERING:
+                return IssueSeverity.ERROR
             case self.INVALID_RELEASE_DATE:
                 return IssueSeverity.ERROR
             case self.DUPLICATE_RELEASES:
@@ -304,17 +306,16 @@ class TagFormat(enum.Enum):
 
 class GlobalConfig(yuio.config.Config):
     #: override default path to config
-    config_path: pathlib.Path | None = yuio.app.field(
-        default=None,
-        parser=yuio.parse.Optional(yuio.parse.ExistingPath(extensions=[".toml"])),
-        flags=["--config", "-c"],
-    )
+    config_path: pathlib.Path | None = None
+
+    #: path to the changelog file
+    file: pathlib.Path | None = None
 
     #: increase severity of all messages by one level
     strict: bool = False
 
 
-class Config(GlobalConfig):
+class Config(yuio.config.Config):
     #: path to the changelog file.
     file: pathlib.Path = yuio.config.field(
         default=pathlib.Path("CHANGELOG.md"),
@@ -335,6 +336,47 @@ class Config(GlobalConfig):
         "performance": "Performance",
         "fixed": "Fixed",
     }
+
+    #: if these change categories appear in unreleased section, suggest bumping
+    #: the patch version component.
+    bump_patch_categories: set[str] = {
+        "security",
+        "deprecated",
+        "performance",
+        "fixed",
+    }
+
+    #: additional items that will be added to `bump_patch_categories`
+    #: without overriding it.
+    extra_bump_patch_categories: set[str] = yuio.app.field(
+        default=set(), merge=lambda l, r: l | r
+    )
+
+    #: if these change categories appear in unreleased section, suggest bumping
+    #: the minor version component.
+    bump_minor_categories: set[str] = {
+        "added",
+        "changed",
+        "removed",
+    }
+
+    #: additional items that will be added to `bump_minor_categories`
+    #: without overriding it.
+    extra_bump_minor_categories: set[str] = yuio.app.field(
+        default=set(), merge=lambda l, r: l | r
+    )
+
+    #: if these change categories appear in unreleased section, suggest bumping
+    #: the major version component.
+    bump_major_categories: set[str] = {
+        "breaking",
+    }
+
+    #: additional items that will be added to `bump_major_categories`
+    #: without overriding it.
+    extra_bump_major_categories: set[str] = yuio.app.field(
+        default=set(), merge=lambda l, r: l | r
+    )
 
     #: additional items that will be added to `change_categories`
     #: without overriding it.
@@ -453,20 +495,39 @@ class Config(GlobalConfig):
         else:
             return parse_version(self.ignore_missing_releases_before, self)
 
+    @functools.cached_property
+    def full_bump_patch_categories(self):
+        return self.bump_patch_categories | self.extra_bump_patch_categories
+
+    @functools.cached_property
+    def full_bump_minor_categories(self):
+        return self.bump_minor_categories | self.extra_bump_minor_categories
+
+    @functools.cached_property
+    def full_bump_major_categories(self):
+        return self.bump_major_categories | self.extra_bump_major_categories
+
     def validate_config(self):
         if self.release_link_template_vars:
             for var in ["prev_tag", "tag"]:
                 if var in self.release_link_template_vars:
                     raise yuio.parse.ParsingError(
-                        f"release_link_template_vars can't contain key {var!r}.",
+                        f"release_link_template_vars can't contain key {var!r}",
                     )
-        for category in self.full_change_categories_map.values():
-            if category not in self.full_change_categories:
-                raise yuio.parse.ParsingError(
-                    f"full_change_categories_map has an entry for category {category}, "
-                    f"which is missing from change_categories. Please add {category} "
-                    "to change_categories",
-                )
+        for categories, name in [
+            (self.full_change_categories_map.values(), "change_categories_map"),
+            (self.full_bump_patch_categories, "bump_patch_categories"),
+            (self.full_bump_minor_categories, "bump_minor_categories"),
+            (self.full_bump_major_categories, "bump_major_categories"),
+        ]:
+            for category in categories:
+                if category not in self.full_change_categories:
+                    raise yuio.parse.ParsingError(
+                        f"{name} has an entry for category {category}, "
+                        f"which is missing from change_categories. Please add {category} "
+                        "to change_categories",
+                    )
+
         if (
             self.ignore_missing_releases_before is not None
             and self.parsed_ignore_missing_releases_before is None

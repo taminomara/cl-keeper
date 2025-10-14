@@ -41,7 +41,7 @@ def check_duplicates(sections: _t.Iterable[Section], ctx: Context):
             if seen_unreleased:
                 ctx.issue(
                     IssueCode.DUPLICATE_RELEASES,
-                    "Found multiple sections for unreleased changes.",
+                    "Found multiple sections for unreleased changes",
                     pos=section,
                 )
             seen_unreleased = True
@@ -50,7 +50,7 @@ def check_duplicates(sections: _t.Iterable[Section], ctx: Context):
             if release.canonized_version in seen_versions:
                 ctx.issue(
                     IssueCode.DUPLICATE_RELEASES,
-                    "Found multiple sections for release `%s`.",
+                    "Found multiple sections for release `%s`",
                     release.version,
                     pos=section,
                 )
@@ -68,7 +68,7 @@ def check_duplicates_in_subsections(section: Section, ctx: Context):
                 if subsection.category in seen_categories:
                     ctx.issue(
                         IssueCode.DUPLICATE_CHANGE_CATEGORIES,
-                        f"Found multiple sub-sections for `%s` category in {section.what()}.",
+                        f"Found multiple sub-sections for `%s` category in {section.what()}",
                         subsection.category,
                         pos=subsection,
                     )
@@ -79,14 +79,14 @@ def check_duplicates_in_subsections(section: Section, ctx: Context):
 def check_order(sections: list[Section], ctx: Context):
     if (
         not sections
-        or sections[0].is_trivia()
+        or not sections[0].is_trivia()
         or not sections[0].subsections
         or not sections[0].subsections[0].content
         or sections[0].subsections[0].content[0].tag != "h1"
     ):
         ctx.issue(
             IssueCode.GENERAL_FORMATTING_ERROR,
-            "Changelog must start with a first level heading.",
+            "Changelog must start with a first level heading",
             pos=sections[0] if sections else None,
         )
         return
@@ -97,7 +97,7 @@ def check_order(sections: list[Section], ctx: Context):
             if last_version is not None:
                 ctx.issue(
                     IssueCode.RELEASE_ORDERING,
-                    "Section for unreleased changes must be first in the changelog.",
+                    "Section for unreleased changes must be first in the changelog",
                     pos=section,
                 )
             check_order_in_subsection(section, ctx)
@@ -111,7 +111,7 @@ def check_order(sections: list[Section], ctx: Context):
                     # Don't spam too many warnings.
                     ctx.issue(
                         IssueCode.RELEASE_ORDERING,
-                        "Sections are not ordered by release versions.",
+                        "Sections are not ordered by release versions",
                         pos=section,
                     )
                 found_unordered_sections = True
@@ -136,7 +136,7 @@ def check_order_in_subsection(section: Section, ctx: Context):
                 ):
                     ctx.issue(
                         IssueCode.CHANGE_CATEGORY_ORDERING,
-                        f"Sub-sections in {section.what()} are not ordered by preferred order.",
+                        f"Sub-sections in {section.what()} are not ordered by preferred order",
                         pos=subsection,
                     )
                     return
@@ -157,7 +157,7 @@ def check_links(
             if section.version_link is not None:
                 ctx.issue(
                     IssueCode.UNEXPECTED_RELEASE_LINK,
-                    f"Unexpected link for {section.what()}.",
+                    f"Unexpected link for {section.what()}",
                     pos=section,
                 )
         return
@@ -177,7 +177,7 @@ def check_links(
             if section.version_link is not None:
                 ctx.issue(
                     IssueCode.UNEXPECTED_RELEASE_LINK,
-                    f"Unexpected link for {section.what()}.",
+                    f"Unexpected link for {section.what()}",
                     pos=section,
                 )
         else:
@@ -185,28 +185,28 @@ def check_links(
                 if can_trust_order:
                     ctx.issue(
                         IssueCode.MISSING_RELEASE_LINK,
-                        f"Missing link for {section.what()}, should be <c path>%s</c>.",
+                        f"Missing link for {section.what()}, should be <c path>%s</c>",
                         canonical_link,
                         pos=section,
                     )
                 else:
                     ctx.issue(
                         IssueCode.MISSING_RELEASE_LINK,
-                        f"Missing link for {section.what()}.",
+                        f"Missing link for {section.what()}",
                         pos=section,
                     )
             elif section.version_link != canonical_link:
                 if can_trust_order:
                     ctx.issue(
                         IssueCode.MISSING_RELEASE_LINK,
-                        f"Incorrect link for {section.what()}, should be <c path>%s</c>.",
+                        f"Incorrect link for {section.what()}, should be <c path>%s</c>",
                         canonical_link,
                         pos=section,
                     )
                 else:
                     ctx.issue(
                         IssueCode.INCORRECT_RELEASE_LINK,
-                        f"Potentially incorrect link for {section.what()}.",
+                        f"Potentially incorrect link for {section.what()}",
                         pos=section,
                     )
 
@@ -223,7 +223,7 @@ def check_dates(
         if ctx.config.add_release_date and release.release_date_fmt is None:
             ctx.issue(
                 IssueCode.MISSING_RELEASE_DATE,
-                "Missing date for release `%s`.",
+                "Missing date for release `%s`",
                 release.version,
                 pos=section,
             )
@@ -239,7 +239,7 @@ def check_dates(
             ):
                 ctx.issue(
                     IssueCode.INCORRECT_RELEASE_DATE,
-                    "Release date for release `%s` is different from commit date `%s`.",
+                    "Release date for release `%s` is different from commit date `%s`",
                     release.version,
                     data.committer_date.isoformat(),
                     pos=release,
@@ -247,7 +247,7 @@ def check_dates(
         elif not ctx.config.add_release_date and release.release_date_fmt is None:
             ctx.issue(
                 IssueCode.UNEXPECTED_RELEASE_DATE,
-                "Unexpected release date for release `%s`.",
+                "Unexpected release date for release `%s`",
                 release.version,
                 pos=release,
             )
@@ -269,7 +269,7 @@ def check_section_content(sections: list[Section], ctx: Context):
             if node.tag == "h1":
                 ctx.issue(
                     IssueCode.GENERAL_FORMATTING_ERROR,
-                    "Unexpected first level heading.",
+                    "Unexpected first level heading",
                     pos=node,
                 )
         if release := section.as_release():
@@ -281,7 +281,7 @@ def check_section_content(sections: list[Section], ctx: Context):
             ):
                 ctx.issue(
                     IssueCode.EMPTY_RELEASE,
-                    "Section for release `%s` is empty.",
+                    "Section for release `%s` is empty",
                     release.version,
                     pos=section,
                 )
@@ -289,7 +289,7 @@ def check_section_content(sections: list[Section], ctx: Context):
                 if not subsection.content:
                     ctx.issue(
                         IssueCode.EMPTY_CHANGE_CATEGORY,
-                        "Sub-section `%s` for release `%s` is empty.",
+                        "Sub-section `%s` for release `%s` is empty",
                         subsection.category,
                         release.version,
                         pos=section,
@@ -310,7 +310,7 @@ def check_tags(
         ctx.issue(
             IssueCode.MISSING_TAG_FOR_RELEASE,
             f"Missing tags for release{"" if len(not_in_repo) == 1 else "s"} "
-            f"{_join_more(not_in_repo)}.",
+            f"{_join_more(not_in_repo)}",
             scope=IssueScope.EXTERNAL,
         )
     lower_bound = ctx.config.parsed_ignore_missing_releases_before
@@ -332,7 +332,7 @@ def check_tags(
             IssueCode.MISSING_RELEASE_FOR_TAG,
             f"Missing changelog sections for "
             f"release{"" if len(not_in_changelog) == 1 else "s"} "
-            f"{_join_more(not_in_changelog)}.",
+            f"{_join_more(not_in_changelog)}",
             scope=IssueScope.EXTERNAL,
         )
 

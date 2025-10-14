@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import datetime
 import enum
+import json
 import logging
+import os
 import pathlib
 import re
 import tomllib
@@ -11,6 +13,7 @@ import typing as _t
 import packaging.version
 import semver
 import yuio.app
+import yuio.complete
 import yuio.git
 import yuio.io
 import yuio.parse
@@ -31,11 +34,13 @@ from changelog_keeper.context import Context, IssueCode, IssueScope
 from changelog_keeper.fix import fix as _fix
 from changelog_keeper.model import (
     Changelog,
+    ReleaseSection,
     RepoVersion,
     Section,
-    SectionType,
     SubSection,
+    SubSectionCategoryKind,
     SubSectionType,
+    UnreleasedSection,
     Version,
 )
 from changelog_keeper.parse import canonize_version as _canonize_version
@@ -64,18 +69,32 @@ _COMMENT_RE = re.compile(r"\<\!\-\-.*?(\-\-\>|\Z)", re.MULTILINE | re.DOTALL)
 
 @yuio.app.app(version=__version__)
 def main(
-    #: global options
-    global_options: GlobalConfig = yuio.app.inline(help=""),
+    #: override path to the config file
+    config_path: (
+        _t.Annotated[
+            pathlib.Path,
+            yuio.parse.ExistingPath(extensions=[".toml", ".yaml", ".yml"]),
+        ]
+        | None
+    ) = yuio.app.field(default=None, flags=["-c", "--config"], usage=yuio.OMIT),
+    #: override path to the changelog file
+    file: pathlib.Path | None = yuio.app.field(
+        default=None,
+        flags=["-i", "--input"],
+        completer=yuio.complete.File(extensions=[".md"]),
+        usage=yuio.OMIT,
+    ),
+    #: increase severity of all messages by one level
+    strict: bool = yuio.app.field(default=False, usage=yuio.OMIT),
 ):
-
-    _GLOBAL_OPTIONS.update(global_options)
+    _GLOBAL_OPTIONS.config_path = config_path
+    _GLOBAL_OPTIONS.strict = strict
+    _GLOBAL_OPTIONS.file = file
 
     logging.getLogger("markdown_it").setLevel("WARNING")
 
+    logger.debug("changelog keeper version %s", __version__)
 
-main.usage = """
-%(prog)s [--config <*.toml>] [--strict] [-v] <subcommand>
-""".strip()
 
 main.description = """
 a helper for maintaining changelog files that use `keep-a-changelog` format.
@@ -103,22 +122,20 @@ main.epilog = """
 
 
 @main.subcommand
-def check(
-    #: path to the changelog file
-    file: pathlib.Path | None = yuio.app.field(default=None, flags=["-i", "--input"]),
-):
+def check():
     """
     check contents of the changelog file.
 
     """
 
-    config = _load_config(file)
-    file = _locate_changelog(file, config)
+    config = _load_config()
+    file = _locate_changelog(config)
 
     ctx = Context(
         file,
         file.read_text(),
         config,
+        _GLOBAL_OPTIONS.strict,
         _make_link_templates(file.parent, config),
     )
 
@@ -132,29 +149,28 @@ def check(
         ctx.report()
         ctx.exit_if_has_errors()
     else:
-        yuio.io.success("<c b>No errors detected</c>")
+        yuio.io.success("No issues detected")
 
 
 @main.subcommand
 def fix(
     #: don't save changes, print the diff instead
     dry_run: bool = False,
-    #: path to the changelog file
-    file: pathlib.Path | None = yuio.app.field(default=None, flags=["-i", "--input"]),
 ):
     """
     fix contents of the changelog file.
 
     """
 
-    config = _load_config(file)
-    file = _locate_changelog(file, config)
+    config = _load_config()
+    file = _locate_changelog(config)
     original = file.read_text()
 
     ctx = Context(
         file,
         original,
         config,
+        _GLOBAL_OPTIONS.strict,
         _make_link_templates(file.parent, config),
     )
 
@@ -167,28 +183,24 @@ def fix(
 
     result = _render(changelog, ctx)
 
-    if result == original:
-        yuio.io.success("<c b>No errors detected</c>")
-        return
-
-    if not dry_run:
-        yuio.io.success("<c b>Changelog successfully fixed</c>")
-        file.write_text(result)
-    else:
-        yuio.io.success("<c b>Dry-run complete</c>")
-
     ctx.reset(result)
 
     _check(_parse(ctx), ctx, repo_versions)
 
+    if result == original and ctx.has_messages():
+        yuio.io.success("No fixable issues detected")
+    elif result == original:
+        yuio.io.success("No issues detected")
+    elif not dry_run:
+        yuio.io.success("Changelog successfully fixed")
+        file.write_text(result)
+
     if ctx.has_messages():
-        yuio.io.heading("Some issues can't be fixed automatically")
+        yuio.io.heading("Unfixed issues")
         ctx.report()
 
     if dry_run:
         _print_diff(original, result, file)
-
-    ctx.exit_if_has_errors()
 
 
 @main.subcommand
@@ -197,9 +209,8 @@ def gen(
     ignore_errors: bool = False,
     #: don't save changes, print the diff instead
     dry_run: bool = False,
-    #: path to the changelog file
-    file: pathlib.Path | None = yuio.app.field(default=None, flags=["-i", "--input"]),
-    #: start commit that will be included in the change log; default is the latest release
+    #: start commit that will be included in the change log;
+    #: default is the latest release
     start: yuio.git.Ref | str | None = yuio.app.field(
         default=None, flags=["-f", "--from"]
     ),
@@ -211,41 +222,51 @@ def gen(
     """
     generate changelog from git log.
 
+    this command will inspect git repository even if `check_repo_tags` is `false`.
+
     """
 
-    config = _load_config(file)
-    file = _locate_changelog(file, config)
+    config = _load_config()
+    file = _locate_changelog(config)
     original = file.read_text()
 
     ctx = Context(
         file,
         original,
         config,
+        _GLOBAL_OPTIONS.strict,
         _make_link_templates(file.parent, config),
     )
 
     repo_versions = get_repo_versions(file.parent, ctx)
 
+    changelog = _parse(ctx)
+
     if end is None:
         end = yuio.git.Ref("HEAD")
     if start is None:
-        start, _ = _find_latest_version(repo_versions, config)
+        _, start, _ = _find_latest_version(changelog, repo_versions, config)
         if start:
             start = f"{config.tag_prefix}{start}"
+
+    repo = yuio.git.Repo(file.parent)
+
+    if start and not repo.show(start):
+        raise yuio.app.AppError("Failed to check git log: unknown ref `%s`", start)
+    if end and not repo.show(end):
+        raise yuio.app.AppError("Failed to check git log: unknown ref `%s`", end)
+
     if start:
         ref = f"{start}..{end}"
     else:
         ref = end
-    yuio.io.info("Generating changelog for range `%s`", ref)
-
-    changelog = _parse(ctx)
 
     _check(changelog, ctx, repo_versions)
-    if ctx.has_errors() and not ignore_errors:
-        ctx.report()
-        ctx.exit_if_has_errors()
 
-    repo = yuio.git.Repo(file.parent)
+    if ctx.has_errors():
+        ctx.report()
+    if not ignore_errors:
+        ctx.exit_if_has_errors()
 
     groups: dict[str, list[str]] = {}
     n_messages = 0
@@ -271,12 +292,11 @@ def gen(
             n_messages += 1
 
     if not groups:
-        yuio.io.info("No changelog messages detected in this commit range")
-        return
+        raise yuio.app.AppError("No changelog messages detected in range `%s`", ref)
 
     new_section = None
     to_remove = set()
-    for i, section in _find_sections(FindMode.UNRELEASED, changelog, config):
+    for i, section, _ in _find_sections(FindMode.UNRELEASED, changelog, config):
         to_remove.add(i)
         if new_section is None:
             new_section = section
@@ -288,9 +308,13 @@ def gen(
     ]
 
     if new_section is None:
-        new_section = Section(type=SectionType.UNRELEASED)
+        new_section = UnreleasedSection(
+            heading=None, subsections=[], version_link=None, version_label=None
+        )
 
-    additional_section = Section()
+    additional_section = UnreleasedSection(
+        heading=None, subsections=[], version_link=None, version_label=None
+    )
     for name, messages in groups.items():
         subsection = SubSection(type=SubSectionType.CHANGES, category=name)
         items = []
@@ -305,9 +329,10 @@ def gen(
     _merge_sections(new_section, additional_section)
 
     yuio.io.info(
-        "Extracted `%s` changelog message%s",
+        "Extracted `%s` changelog message%s in range `%s`",
         n_messages,
         "" if n_messages == 1 else "s",
+        ref,
     )
 
     if edit:
@@ -320,16 +345,65 @@ def gen(
     result = _render(changelog, ctx)
 
     if not dry_run:
-        yuio.io.success("<c b>Changelog successfully updated</c>")
+        yuio.io.success("Changelog successfully updated")
         file.write_text(result)
     else:
-        yuio.io.success("<c b>Dry-run complete</c>")
         _print_diff(original, result, file)
 
     ctx.exit_if_has_errors()
 
 
+gen.epilog = """
+# examples:
+
+## generate changelog
+
+```sh
+chk gen
+```
+
+## generate changelog for specific range
+
+```sh
+chk gen -f v1.0.0 -t v1.1.0
+```
+
+## generate changelog and open for edit
+
+```sh
+chk gen --edit
+```
+
+# how changes are extracted from commits:
+
+this command inspect commit messages for trailers with key `changelog`. If commit
+message contains line `"changelog: ..."` at the end, it will be added to the log.
+
+For example, if a commit message looks like this:
+
+```
+commit message ...
+changelog: Added some new feature.
+```
+
+then an entry "Added some new feature" will be created.
+
+Each changelog entry will be matched against `change_categories_map` to determine
+an appropriate section for it. You can also specify section manually by enclosing it
+in square brackets and adding to the front of the change text:
+
+```
+commit message ...
+changelog: [added] Implemented new feature.
+```
+
+Changelog entries might span multiple lines, but they should be indented:
+
+"""
+
+
 class BumpMode(enum.Enum):
+    AUTO = "auto"
     MAJOR = "major"
     MINOR = "minor"
     PATCH = "patch"
@@ -339,6 +413,9 @@ class BumpMode(enum.Enum):
         return self.value
 
 
+_PRE_RELEASE_GROUP = yuio.app.MutuallyExclusiveGroup()
+
+
 @main.subcommand
 def bump(
     #: produce result even if errors are detected
@@ -346,17 +423,20 @@ def bump(
     #: don't save changes, print the diff instead
     dry_run: bool = False,
     #: release version or tag that will be used for a new release
-    version: BumpMode | yuio.git.Tag | str | None = yuio.app.positional(default=None),
+    version: (
+        _t.Annotated[BumpMode, yuio.parse.WithDesc("version component")]
+        | yuio.git.Tag
+        | str
+        | None
+    ) = yuio.app.positional(default=None),
     #: create an alpha pre-release. If `version` is given, this will bump
     #: the corresponding component and make a pre-release. If `version` is not given,
     #: the latest release must be a pre-release itself.
-    alpha: bool = False,
+    alpha: bool = yuio.app.field(default=False, group=_PRE_RELEASE_GROUP),
     #: create a beta pre-release, similar to `--alpha`.
-    beta: bool = False,
+    beta: bool = yuio.app.field(default=False, group=_PRE_RELEASE_GROUP),
     #: create a release candidate, similar to `--alpha`.
-    rc: bool = False,
-    #: path to the changelog file
-    file: pathlib.Path | None = yuio.app.field(default=None, flags=["-i", "--input"]),
+    rc: bool = yuio.app.field(default=False, group=_PRE_RELEASE_GROUP),
     #: open generated changes for editing
     edit: bool = False,
 ):
@@ -373,32 +453,49 @@ def bump(
         raise yuio.parse.ParsingError(
             "--alpha, --beta, --rc are not allowed when specifying custom versions"
         )
-    if alpha + beta + rc > 1:
-        raise yuio.parse.ParsingError(
-            "only one of --alpha, --beta, --rc allowed at the same time"
-        )
 
-    config = _load_config(file)
-    file = _locate_changelog(file, config)
+    config = _load_config()
+    file = _locate_changelog(config)
     original = file.read_text()
 
     ctx = Context(
         file,
         original,
         config,
+        _GLOBAL_OPTIONS.strict,
         _make_link_templates(file.parent, config),
     )
 
     if isinstance(version, str) and version.startswith(config.tag_prefix):
         version = yuio.git.Tag(version[len(config.tag_prefix) :])
 
+    changelog = _parse(ctx)
+
+    found = None
+    to_remove = set()
+    for i, section, _ in _find_sections(FindMode.UNRELEASED, changelog, config):
+        to_remove.add(i)
+        if found is None:
+            found = section
+        else:
+            _merge_sections(found, section)
+
+    changelog.sections = [
+        section for i, section in enumerate(changelog.sections) if i not in to_remove
+    ]
+
+    if found is None:
+        found = UnreleasedSection(
+            heading=None, subsections=[], version_link=None, version_label=None
+        )
+
     repo_versions = None
     if isinstance(version, BumpMode) or version is None:
         repo_versions = get_repo_versions(file.parent, ctx)
-        _, latest_version = _find_latest_version(repo_versions, config)
+        latest_version, _, _ = _find_latest_version(changelog, repo_versions, config)
         if latest_version is None:
-            raise yuio.app.AppError("No previous release to bump.")
-        version = _bump_version(latest_version, version, alpha, beta, rc)
+            raise yuio.app.AppError("No previous release to bump")
+        version = _bump_version(latest_version, version, alpha, beta, rc, found, config)
     else:
         if ctx.config.check_repo_tags:
             repo_versions = get_repo_versions(file.parent, ctx)
@@ -407,51 +504,47 @@ def bump(
     if parsed_version is None:
         ctx.issue(
             IssueCode.INVALID_VERSION,
-            "New version `%s` doesn't follow %s specification.",
+            "New version `%s` doesn't follow %s specification",
             version,
             ctx.config.version_format.value,
             scope=IssueScope.EXTERNAL,
         )
 
-    changelog = _parse(ctx)
-
     _check(changelog, ctx, repo_versions)
-    ctx.report()
-    if ctx.has_errors() and not ignore_errors:
+
+    if ctx.has_errors():
+        ctx.report()
+    if not ignore_errors:
         ctx.exit_if_has_errors()
 
-    for _, section in _find_sections(version, changelog, config):
+    for _, section, _ in _find_sections(version, changelog, config):
         if section.map is not None:
-            pos = f" on line {section.map[0] + 1}"
+            pos = f" on line `{section.map[0] + 1}`"
         else:
             pos = ""
         raise yuio.app.AppError(f"release {version} already exists{pos}")
 
-    new_section = None
-    to_remove = set()
-    for i, section in _find_sections(FindMode.UNRELEASED, changelog, config):
-        to_remove.add(i)
-        if new_section is None:
-            new_section = section
-        else:
-            _merge_sections(new_section, section)
-
-    changelog.sections = [
-        section for i, section in enumerate(changelog.sections) if i not in to_remove
-    ]
-
-    if new_section is None:
-        new_section = Section(type=SectionType.UNRELEASED)
-    new_section.type = SectionType.RELEASE
-    new_section.version = version
-    new_section.parsed_version = parsed_version
-    new_section.canonized_version = _canonize_version(parsed_version, config)
-    new_section.release_date = datetime.date.today()
+    new_section = ReleaseSection(
+        heading=None,
+        subsections=found.subsections,
+        version=version,
+        parsed_version=parsed_version,
+        canonized_version=_canonize_version(parsed_version, config) or version,
+        release_date=datetime.date.today(),
+        version_link=None,
+        version_label=None,
+        release_date_fmt=datetime.date.today().isoformat(),
+        release_comment=None,
+    )
 
     if edit:
         _edit_section(changelog, ctx, new_section)
 
-    changelog.sections.append(Section(type=SectionType.UNRELEASED))
+    changelog.sections.append(
+        UnreleasedSection(
+            heading=None, subsections=[], version_link=None, version_label=None
+        )
+    )
     changelog.sections.append(new_section)
 
     _fix(changelog, ctx, repo_versions)
@@ -459,18 +552,17 @@ def bump(
     result = _render(changelog, ctx)
 
     if not dry_run:
-        yuio.io.success("<c b>Changelog successfully updated</c>")
+        yuio.io.success("Changelog successfully updated")
         file.write_text(result)
     else:
-        yuio.io.success("<c b>Dry-run complete</c>")
         _print_diff(original, result, file)
 
     ctx.exit_if_has_errors()
 
 
 bump.usage = """
-%(prog)s [<options>] <version> [-f <file>]
-%(prog)s [<options>] [major|minor|patch|post] [--alpha|--beta|--rc] [-f <file>]
+%(prog)s [<options>] [--ignore-errors] [--dry-run] [--edit] <version>
+%(prog)s [<options>] [--ignore-errors] [--dry-run] [--edit] [auto|major|minor|patch|post] [--alpha|--beta|--rc]
 """
 
 bump.epilog = """
@@ -485,9 +577,19 @@ prior releases with the same version, this operation will succeed:
 chk bump 1.0.5
 ```
 
+## automatic version detection
+
+changelog keeper can suggest next version based on changelog content
+(the `--dry-run` flag is handy here):
+
+```sh
+chk bump auto
+```
+
 ## bumping a version component
 
-you can bump a version component by setting `<version>` to `major|minor|patch|post`:
+you can bump a version component by setting `<version>` to `major`, `minor`,
+`patch`, or `post`:
 
 ```sh
 chk bump minor  # 1.0.0 -> 1.1.0
@@ -495,7 +597,7 @@ chk bump minor  # 1.0.0 -> 1.1.0
 
 ## pre-releases
 
-you can make a pre-release by adding `--alpha|--beta|--rc`:
+you can make a pre-release by adding `--alpha`, `--beta`, or `--rc`:
 
 ```sh
 chk bump major --beta  # 1.5.1 -> 2.0.0b0
@@ -525,19 +627,19 @@ def find(
     #: produce result even if errors are detected
     ignore_errors: bool = False,
     #: print data in JSON format
-    json: bool = False,
+    format_json: bool = yuio.app.field(default=False, flags="--json"),
     #: release version or tag, can also be `unreleased` or `latest`
-    version: FindMode | yuio.git.Tag | str = yuio.app.positional(),
-    #: path to the changelog file
-    file: pathlib.Path | None = yuio.app.field(default=None, flags=["-i", "--input"]),
+    version: (
+        _t.Annotated[FindMode, yuio.parse.WithDesc("query")] | yuio.git.Tag | str
+    ) = yuio.app.positional(),
 ):
     """
     find a changelog entry for a given release version.
 
     """
 
-    config = _load_config(file)
-    file = _locate_changelog(file, config)
+    config = _load_config()
+    file = _locate_changelog(config)
     original = file.read_text()
 
     if isinstance(version, str) and version.startswith(config.tag_prefix):
@@ -547,6 +649,7 @@ def find(
         file,
         original,
         config,
+        _GLOBAL_OPTIONS.strict,
         _make_link_templates(file.parent, config),
     )
 
@@ -557,41 +660,64 @@ def find(
     changelog = _parse(ctx)
 
     _check(changelog, ctx, repo_versions)
-    if ctx.has_errors() and not ignore_errors:
+
+    if ctx.has_errors():
         ctx.report()
+    if not ignore_errors:
         ctx.exit_if_has_errors()
 
-    logger.debug("searching for %r", version)
-
     found = None
-    for _, section in _find_sections(version, changelog, config):
+    found_latest_in_changelog = None
+    for _, section, is_latest in _find_sections(version, changelog, config):
         if found is None:
             found = section
+            found_latest_in_changelog = is_latest
         else:
             _merge_sections(found, section)
 
     if found is not None:
-        ctx.report()
         tokens = found.to_tokens(include_heading=False)
-        if json:
+        if format_json:
+            found_version = None
+            found_canonized_version = None
+            found_latest = None
+            tag = None
+            is_pre_release = None
+            is_post_release = None
+            if release := found.as_release():
+                found_version = release.version
+                found_canonized_version = release.canonized_version
+                if repo_versions and (
+                    repo_version := repo_versions.get(release.canonized_version)
+                ):
+                    tag = f"{config.tag_prefix}{repo_version.version}"
+                is_pre_release = _is_pre_release(release.parsed_version)
+                is_post_release = _is_post_release(release.parsed_version)
+                try:
+                    _, _, latest_version_canonized = _find_latest_version(
+                        changelog, repo_versions, config
+                    )
+                except:
+                    pass
+                else:
+                    found_latest = release.canonized_version == latest_version_canonized
             data = {
+                "version": found_version,
+                "canonizedVersion": found_canonized_version,
+                "tag": tag,
                 "text": _render(changelog, ctx, tokens, disable_wrapping=True),
-                "version": found.version,
-                "canonizedVersion": found.canonized_version,
-                "tag": f"{config.tag_prefix}{found.version}" if found.version else None,
-                "isUnreleased": version is FindMode.UNRELEASED,
-                # "isLatest": version is FindMode.UNRELEASED,
-                # "isPreRelease":
+                "isLatestInChangelog": found_latest_in_changelog,
+                "isLatestInSemanticOrder": found_latest,
+                "isPreRelease": is_pre_release,
+                "isPostRelease": is_post_release,
+                "isUnreleased": found.is_unreleased(),
             }
+            print(json.dumps(data, indent="  "))
         else:
             print(_render(changelog, ctx, tokens, disable_wrapping=True), end="")
     else:
         raise yuio.app.AppError("Can't find changelog entry for version `%s`", version)
 
-
-find.usage = """
-%(prog)s [<options>] [--json] [latest|unreleased|<version>]
-"""
 
 find.epilog = """
 # examples:
@@ -599,8 +725,73 @@ find.epilog = """
 find an exact version:
 
 ```sh
-chk check-tag v1.0.0-rc2
+chk find v1.0.0-rc2
 ```
+
+find the first version (barring the `unreleased` section)
+that appears in the changelog:
+
+```sh
+chk find latest
+```
+
+find the `unreleased` section:
+
+```sh
+chk find unreleased
+```
+
+# json output:
+
+If `--json` flag is given, a JSON object is printed to stdout. It will contain
+the following fields:
+
+- <c hl/flag:sh-usage>version</c> - version string, as appears in the changelog.
+
+  Can be `null` if unreleased section is requested.
+
+- <c hl/flag:sh-usage>canonizedVersion</c> - version string, canonized according to the used
+  `version_format`.
+
+  If `version_format` is `null` or canonization fails, this will contain
+  string from `version`.
+
+- <c hl/flag:sh-usage>tag</c> - tag that corresponds to this version.
+
+  Can be `null` if requested release not found, if unreleased section is requested,
+  if `check_repo_tags` is `false`, if version canonization fails, or if tag is not
+  found for this release.
+
+- <c hl/flag:sh-usage>text</c> - text extracted from the changelog entry.
+
+  Can be empty if requested release not found.
+
+- <c hl/flag:sh-usage>isLatestInChangelog</c> - `true` if found version appears first in the changelog file.
+
+  Can be `null` if requested release not found, or if unreleased section
+  is requested.
+
+- <c hl/flag:sh-usage>isLatestInSemanticOrder</c> - `true` if this is the latest known release.
+
+  Release versions are compared with respect to the selected `version_format`.
+  If `check_repo_tags` is `true`, this flag also checks all tags found
+  in the repository.
+
+  Can be `null` if requested release not found, or if unreleased section
+  is requested.
+
+- <c hl/flag:sh-usage>isPreRelease</c> - `true` if release version contains a pre-release component,
+  like `beta` or `rc`.
+
+  Can be `null` if requested release not found, if unreleased section
+  is requested, or if version canonization fails.
+
+- <c hl/flag:sh-usage>isPostRelease</c> - `true` if release version contains a post-release component.
+
+  Can be `null` if requested release not found, if unreleased section
+  is requested, or if version canonization fails.
+
+- <c hl/flag:sh-usage>isUnreleased</c> - `true` if unreleased section is requested.
 
 """
 
@@ -618,7 +809,7 @@ def check_tag(
 
     """
 
-    config = _load_config(None)
+    config = _load_config()
     error = False
     if not tag.startswith(config.tag_prefix):
         yuio.io.error("Tag `%s` should start with `%r`", tag, config.tag_prefix)
@@ -632,14 +823,10 @@ def check_tag(
         )
         error = True
     if error:
-        raise yuio.app.AppError("Tag verification failed.")
+        raise yuio.app.AppError("Tag verification failed")
     else:
         yuio.io.success("Tag `%s` is valid", tag)
 
-
-check_tag.usage = """
-%(prog)s [<options>] <tag>
-"""
 
 check_tag.epilog = """
 # examples:
@@ -653,16 +840,77 @@ chk check-tag v1.0.0-rc2
 """
 
 
-def _load_config(file: pathlib.Path | None) -> Config:
+@main.subcommand(help=yuio.DISABLED)
+def pre_commit_check(changed_files: set[pathlib.Path] = yuio.app.positional()):
+    """
+    same as `fix`, but expects list of changed files as command line arguments,
+    and doesn't perform fix if changelog is not updated.
+
+    """
+    config = _load_config()
+    file = _locate_changelog(config)
+
+    if file not in changed_files and (
+        _GLOBAL_OPTIONS.config_path is None
+        or _GLOBAL_OPTIONS.config_path not in changed_files
+    ):
+        return
+
+    fix.command()
+
+
+@main.subcommand(help=yuio.DISABLED)
+def pre_commit_check_tag():
+    """
+    same as `check-tag`, but tag is supplied via `PRE_COMMIT_REMOTE_BRANCH` env var.
+
+    """
+    remote_branch = os.environ.get("PRE_COMMIT_REMOTE_BRANCH")
+    if not remote_branch:
+        return
+    config = _load_config()
+    prefix = f"refs/tags/{config.tag_prefix}"
+    if not remote_branch.startswith(prefix):
+        return
+    check_tag.command(remote_branch.removeprefix("refs/tags/"))
+
+
+def _load_config() -> Config:
     config = Config()
     if _GLOBAL_OPTIONS.config_path is None:
-        root = file or pathlib.Path.cwd()
+        root = _GLOBAL_OPTIONS.file or pathlib.Path.cwd()
         while root:
-            if root.joinpath(".changelog.toml").exists():
-                _GLOBAL_OPTIONS.config_path = root / ".changelog.toml"
+            changelog_toml = root.joinpath(".changelog.toml")
+            changelog_toml_exists = changelog_toml.exists()
+            changelog_yaml = root.joinpath(".changelog.yaml")
+            changelog_yaml_exists = changelog_yaml.exists()
+            changelog_yml = root.joinpath(".changelog.yml")
+            changelog_yml_exists = changelog_yml.exists()
+            pyproject_toml = root.joinpath("pyproject.toml")
+            pyproject_toml_exists = pyproject_toml.exists()
+
+            if changelog_toml_exists + changelog_yaml_exists + changelog_yml_exists > 1:
+                found = ", ".join(
+                    f"<c path>{file}</c>"
+                    for file, exists in [
+                        (changelog_toml, changelog_toml_exists),
+                        (changelog_yaml, changelog_yaml_exists),
+                        (changelog_yml, changelog_yml_exists),
+                    ]
+                    if exists
+                )
+                raise yuio.app.AppError(f"Found multiple config files: {found}")
+            if changelog_toml_exists:
+                _GLOBAL_OPTIONS.config_path = changelog_toml
                 break
-            elif root.joinpath("pyproject.toml").exists():
-                _GLOBAL_OPTIONS.config_path = root / "pyproject.toml"
+            elif changelog_yaml_exists:
+                _GLOBAL_OPTIONS.config_path = changelog_yaml
+                break
+            elif changelog_yml_exists:
+                _GLOBAL_OPTIONS.config_path = changelog_yml
+                break
+            elif pyproject_toml_exists:
+                _GLOBAL_OPTIONS.config_path = pyproject_toml
                 break
             next_root = root.parent
             if next_root == root:
@@ -714,8 +962,16 @@ def _load_config(file: pathlib.Path | None) -> Config:
         config.update(
             Config.load_from_parsed_file(data, path=_GLOBAL_OPTIONS.config_path)
         )
-    else:
+    elif _GLOBAL_OPTIONS.config_path.suffix == ".toml":
         config.update(Config.load_from_toml_file(_GLOBAL_OPTIONS.config_path))
+    elif _GLOBAL_OPTIONS.config_path.suffix in [".yaml", ".yml"]:
+        config.update(Config.load_from_yaml_file(_GLOBAL_OPTIONS.config_path))
+    else:
+        raise yuio.app.AppError(
+            "Unknown config format `%s`: <c path>%s</c>",
+            _GLOBAL_OPTIONS.config_path.suffix,
+            _GLOBAL_OPTIONS.config_path,
+        )
 
     config.update(_GLOBAL_OPTIONS)  # type: ignore
     logger.info("using config from %s", _GLOBAL_OPTIONS.config_path)
@@ -723,8 +979,8 @@ def _load_config(file: pathlib.Path | None) -> Config:
     return config
 
 
-def _locate_changelog(file: pathlib.Path | None, config: Config) -> pathlib.Path:
-    if file is None:
+def _locate_changelog(config: Config) -> pathlib.Path:
+    if (file := _GLOBAL_OPTIONS.file) is None:
         if _GLOBAL_OPTIONS.config_path is None:
             file = config.file
         else:
@@ -761,7 +1017,7 @@ def _make_link_templates(repo_root: pathlib.Path, config: Config) -> LinkTemplat
                 "Can't detect url to use in link templates. Please, set "
                 "`release_link_preset` or `release_link_template`, "
                 "`release_link_template_last`, `release_link_template_first` "
-                "in config. Alternatively, set `add_release_link` to `false`."
+                "in config. Alternatively, set `add_release_link` to `false`"
             )
 
     logger.debug("link_templates = %r", link_templates)
@@ -772,27 +1028,27 @@ def _make_link_templates(repo_root: pathlib.Path, config: Config) -> LinkTemplat
 
 
 def _check_link_templates(link_templates: LinkTemplates):
-    class _UsedLinkDetector:
+    class _UnknownKeyDetector:
         def __init__(self, vars: dict[str, str]) -> None:
             self._vars = vars
-            self.used_keys: set[str] = set()
+            self.unknown_keys: set[str] = set()
 
         def __getitem__(self, key: str) -> str:
             if key not in ["tag", "prev_tag"] and key not in self._vars:
-                self.used_keys.add(key)
+                self.unknown_keys.add(key)
             return ""
 
-    mapping = _UsedLinkDetector(link_templates.vars)
+    mapping = _UnknownKeyDetector(link_templates.vars)
     link_templates.template.format_map(mapping)
     link_templates.template_first.format_map(mapping)
     link_templates.template_last.format_map(mapping)
-    if mapping.used_keys:
+    if mapping.unknown_keys:
         yuio.io.error(
             "Some variables used in link templates are missing "
-            "from `release_link_template_vars`: `%s`. Please, add them to config.",
-            ", ".join(sorted(mapping.used_keys)),
+            "from `release_link_template_vars`: `%s`. Please, add them to config",
+            ", ".join(sorted(mapping.unknown_keys)),
         )
-        raise yuio.app.AppError("Configuration is incorrect.")
+        raise yuio.app.AppError("Configuration is incorrect")
 
 
 def _find_sections(version: FindMode | str, changelog: Changelog, config: Config):
@@ -801,30 +1057,32 @@ def _find_sections(version: FindMode | str, changelog: Changelog, config: Config
         canonized_version = (
             _canonize_version(_parse_version(version, config), config) or version
         )
+    logger.debug(
+        "searching for release %r, canonized_version=%r", version, canonized_version
+    )
+    is_latest = True
     for i, section in enumerate(changelog.sections):
-        if section.type == SectionType.TRIVIA:
-            continue
-        if section.type == SectionType.UNRELEASED:
+        if section.is_unreleased():
+            logger.debug("checking unreleased section")
             if version is FindMode.UNRELEASED:
-                yield i, section
-        logger.debug("checking release %r", section.version)
-        if version is FindMode.LATEST or (
-            set(filter(None, [section.version, section.canonized_version]))
-            & set(filter(None, [version, canonized_version]))
-        ):
-            yield i, section
-            if version is FindMode.LATEST:
-                if section.version is not None:
-                    version = section.version
-                    canonized_version = section.canonized_version
-                else:
-                    break
+                yield i, section, None
+        elif release := section.as_release():
+            logger.debug("checking release %r", release.version)
+            if version is FindMode.LATEST or (
+                release.canonized_version == canonized_version
+            ):
+                yield i, section, is_latest
+                if version is FindMode.LATEST:
+                    version = release.version
+                    canonized_version = release.canonized_version
+            is_latest = False
 
 
 def _edit_section(changelog: Changelog, ctx: Context, section: Section):
+    logger.debug("external edit for %s", section.what())
     to_edit = (
         "<!--\n"
-        f" Edit changelog for release {section.version}.\n"
+        f" Edit changelog for {section.what()}.\n"
         " An empty changelog aborts the command.\n"
         "-->\n\n"
     )
@@ -842,29 +1100,38 @@ def _edit_section(changelog: Changelog, ctx: Context, section: Section):
             _detect_subsection_metadata(subsection, ctx)
             subsections.append(subsection)
         section.subsections = subsections
+        logger.debug("external edit successful")
 
 
 def _find_latest_version(
-    changelog: Changelog, repo_versions: list[RepoVersion] | None, config: Config
-) -> tuple[str | None, Version | None]:
+    changelog: Changelog, repo_versions: dict[str, RepoVersion] | None, config: Config
+) -> tuple[Version | None, str | None, str | None]:
+    logger.debug("trying to determine the latest release")
     max_version = None
     max_version_str = None
+    max_version_str_canonized = None
     for section in changelog.sections:
-        if section.type != SectionType.RELEASE:
+        release = section.as_release()
+        if not release:
             continue
-        if section.parsed_version is None:
-            _report_latest_version_fail("release", section.version, section.map, config)
-        if max_version is None or section.parsed_version > max_version:
-            max_version = section.parsed_version
-            max_version_str = section.version
+        if release.parsed_version is None:
+            _report_latest_version_fail("release", release.version, release.map, config)
+        logger.debug("checking release version %r", release.canonized_version)
+        if max_version is None or release.parsed_version > max_version:
+            max_version = release.parsed_version
+            max_version_str = release.version
+            max_version_str_canonized = release.canonized_version
     if repo_versions is not None:
-        for data in repo_versions:
+        for data in repo_versions.values():
             if data.parsed_version is None:
                 _report_latest_version_fail("release", data.version, None, config)
+            logger.debug("checking tag %r", data.canonized_version)
             if max_version is None or data.parsed_version > max_version:
                 max_version = data.parsed_version
                 max_version_str = data.version
-    return max_version_str, max_version
+                max_version_str_canonized = data.canonized_version
+    logger.debug("latest release is %r", max_version_str)
+    return max_version, max_version_str, max_version_str_canonized
 
 
 def _report_latest_version_fail(
@@ -876,84 +1143,119 @@ def _report_latest_version_fail(
     else:
         reason = f"{what} `%s` "
         if map:
-            reason += f"on line {map[0] + 1} "
+            reason += f"on line `{map[0] + 1}` "
         reason += "does not follow %s specification"
-        args = (version, config.version_format)
+        args = (version, config.version_format.value)
     raise yuio.app.AppError(
         "Can't determine the latest version because " + reason, *args
     )
 
 
-_PY_RELEASE_NAMES = {
-    "a": "an alpha release",
-    "b": "a beta release",
-    "rc": "a release candidate",
+_PY_TO_SEMVER_PRE_RELEASE = {
+    "a": "alpha",
+    "alpha": "alpha",
+    "b": "beta",
+    "beta": "beta",
+    "rc": "rc",
 }
 
 
 def _bump_version(
-    version: Version, mode: BumpMode | None, alpha: bool, beta: bool, rc: bool
+    version: Version,
+    mode: BumpMode | None,
+    alpha: bool,
+    beta: bool,
+    rc: bool,
+    unreleased: Section,
+    config: Config,
 ) -> str:
     if isinstance(version, packaging.version.Version):
+        epoch = version.epoch
         major, minor, patch = tuple(
             version.release[i] if len(version.release) >= i else 0 for i in range(3)
         )
         pre = version.pre
         post = version.post
-        match mode:
-            case BumpMode.MAJOR:
-                major, minor, patch, pre, post = major + 1, 0, 0, None, None
-            case BumpMode.MINOR:
-                major, minor, patch, pre, post = major, minor + 1, 0, None, None
-            case BumpMode.PATCH:
-                major, minor, patch, pre, post = major, minor, patch + 1, None, None
-            case BumpMode.POST:
-                if pre is not None:
-                    raise yuio.app.AppError(
-                        "Creating a post-release for a pre-release is probably "
-                        "a mistake. Please, specify version manually if you're sure "
-                        "you want to do this.",
-                        version,
-                    )
-                if post is None:
-                    post = 0
-                else:
-                    post += 1
-            case None:
-                if not pre:
-                    raise yuio.app.AppError(
-                        "Can't create a pre-release without bumping "
-                        "a primary version component: latest release `%s` "
-                        "is not a pre-release.",
-                        version,
-                    )
-
-        if alpha:
-            if pre and pre[0] == "a":
-                pre = ("a", pre[1] + 1)
-            elif pre:
+    elif isinstance(version, semver.Version):
+        if mode is BumpMode.POST:
+            raise yuio.app.AppError(
+                "Semver schema doesn't support creating post releases",
+            )
+        epoch = 0
+        major, minor, patch = version.major, version.minor, version.patch
+        pre = _split_semver_prerelease(version.prerelease)
+        post = None
+    else:
+        assert False
+    if mode is BumpMode.AUTO:
+        mode = _suggest_bump(unreleased, config)
+    match mode:
+        case BumpMode.MAJOR:
+            major, minor, patch, pre, post = major + 1, 0, 0, None, None
+        case BumpMode.MINOR:
+            major, minor, patch, pre, post = major, minor + 1, 0, None, None
+        case BumpMode.PATCH:
+            major, minor, patch, pre, post = major, minor, patch + 1, None, None
+        case BumpMode.POST:
+            if pre is not None:
                 raise yuio.app.AppError(
-                    f"Can't create an alpha pre-release after {_PY_RELEASE_NAMES[pre[0]]}"
+                    "Creating a post-release for a pre-release is probably "
+                    "a mistake. Please, specify version manually if you're sure "
+                    "you want to do this",
+                    version,
                 )
+            if post is None:
+                post = 0
             else:
-                pre = ("a", 0)
-        elif beta:
-            if pre and pre[0] == "b":
-                pre = ("b", pre[1] + 1)
-            elif pre and pre[0] != "a":
+                post += 1
+        case BumpMode.AUTO:
+            assert False
+        case None:
+            assert alpha or beta or rc
+            if not pre:
                 raise yuio.app.AppError(
-                    f"Can't create a beta pre-release after {_PY_RELEASE_NAMES[pre[0]]}"
+                    "Can't create a pre-release without bumping "
+                    "a primary version component: latest release `%s` "
+                    "is not a pre-release",
+                    version,
                 )
-            else:
-                pre = ("b", 0)
-        elif rc:
-            if pre and pre[0] == "rc":
-                pre = ("rc", pre[1] + 1)
-            else:
-                pre = ("rc", 0)
 
-        if version.epoch > 0:
-            prefix = f"{version.epoch}!"
+    if (alpha or beta or rc) and pre and pre[0] not in _PY_TO_SEMVER_PRE_RELEASE:
+        raise yuio.app.AppError(
+            "Can't create a pre-release: latest release `%s` has "
+            "unknown label `%r`. Please, specify version manually",
+            version,
+            pre[0],
+        )
+    elif alpha:
+        if pre and pre[0] in ("a", "alpha"):
+            pre = ("a", pre[1] + 1)
+        elif pre:
+            if pre[0] == "rc":
+                what = "a release candidate"
+            else:
+                what = "a beta pre-release"
+            raise yuio.app.AppError("Can't create an alpha pre-release after %s", what)
+        else:
+            pre = ("a", 0)
+    elif beta:
+        if pre and pre[0] in ("b", "beta"):
+            pre = ("b", pre[1] + 1)
+        elif pre and pre[0] == "rc":
+            raise yuio.app.AppError(
+                f"Can't create a beta pre-release after a release candidate"
+            )
+        else:
+            pre = ("b", 0)
+    elif rc:
+        if pre and pre[0] == "rc":
+            pre = ("rc", pre[1] + 1)
+        else:
+            pre = ("rc", 0)
+
+    if isinstance(version, packaging.version.Version):
+        if epoch > 0:
+            prefix = f"{epoch}!"
         else:
             prefix = ""
         suffix = ""
@@ -961,27 +1263,92 @@ def _bump_version(
             suffix += "".join(map(str, pre))
         if post is not None:
             suffix += f".post{post}"
-        return f"{prefix}{major}.{minor}.{patch}{suffix}"
-    elif isinstance(version, semver.Version):
-        if alpha or beta or rc:
-            raise yuio.app.AppError(
-                "Semver schema doesn't support automatic pre-release bumping. "
-                "Please, specify version manually."
+        bumped = packaging.version.Version(f"{prefix}{major}.{minor}.{patch}{suffix}")
+    else:
+        suffix = ""
+        if pre:
+            pre_str = f"{_PY_TO_SEMVER_PRE_RELEASE[pre[0]]}{pre[1]}"
+        else:
+            pre_str = None
+        bumped = semver.Version(major, minor, patch, pre_str)
+
+    logger.debug(
+        "performed version bump: mode=%r, alpha=%r, beta=%r, rc=%r, result=%r",
+        mode,
+        alpha,
+        beta,
+        rc,
+        bumped,
+    )
+
+    canonical = _canonize_version(_t.cast(Version, bumped), config)
+    assert canonical
+    return canonical
+
+
+_SEMVER_PRERELEASE_RE = re.compile(r"^([a-zA-Z0-9.-]*?)([0-9]*)$")
+
+
+def _split_semver_prerelease(pre: str | None) -> tuple[str, int] | None:
+    if pre is None:
+        return None
+    if match := _SEMVER_PRERELEASE_RE.match(pre):
+        return match.group(1).rstrip(".-"), int(match.group(2))
+    else:
+        return pre, 0
+
+
+def _suggest_bump(unreleased: Section, config: Config) -> BumpMode:
+    logger.debug("checking change categories to determine appropriate version bump")
+    has_major = has_minor = has_patch = False
+    for subsection in unreleased.subsections:
+        if subsection.category_kind != SubSectionCategoryKind.KNOWN:
+            logger.debug(
+                "skipping subsection %s: category unknown", subsection.category
             )
-        match mode:
-            case BumpMode.MAJOR:
-                return str(version.bump_major())
-            case BumpMode.MINOR:
-                return str(version.bump_minor())
-            case BumpMode.PATCH:
-                return str(version.bump_patch())
-            case BumpMode.POST:
-                raise yuio.app.AppError(
-                    "Semver schema doesn't support post versions. "
-                    "Please, specify version manually."
-                )
-            case None:
-                assert False
+            continue
+        logger.debug("inspecting subsection %s", subsection.category)
+        if subsection.category in config.full_bump_major_categories:
+            logger.debug("subsection warrants a major bump")
+            has_major = True
+        elif subsection.category in config.full_bump_minor_categories:
+            logger.debug("subsection warrants a minor bump")
+            has_minor = True
+        elif subsection.category in config.full_bump_patch_categories:
+            logger.debug("subsection warrants a patch bump")
+            has_patch = True
+    if has_major:
+        return BumpMode.MAJOR
+    elif has_minor:
+        return BumpMode.MINOR
+    elif has_patch:
+        return BumpMode.PATCH
+    else:
+        raise yuio.app.AppError(
+            "Can't determine which version component to bump: changelog for unreleased "
+            "version doesn't have change categories from `bump_major_categories`, "
+            "`bump_minor_categories`, or `bump_patch_categories`"
+        )
+
+
+def _is_pre_release(version: Version | None) -> bool | None:
+    if version is None:
+        return None
+    elif isinstance(version, packaging.version.Version):
+        return version.is_prerelease
+    elif isinstance(version, semver.Version):
+        return version.prerelease is not None
+    else:
+        assert False
+
+
+def _is_post_release(version: Version | None) -> bool | None:
+    if version is None:
+        return None
+    elif isinstance(version, packaging.version.Version):
+        return version.is_postrelease
+    elif isinstance(version, semver.Version):
+        return False
     else:
         assert False
 
@@ -989,7 +1356,6 @@ def _bump_version(
 class Theme(yuio.theme.DefaultTheme):
     colors = {
         "code": "bold",
-        "note": [],
         "msg/text:report_error": ["red"],
         "msg/text:report_warning": ["yellow"],
         "msg/text:report_weak_warning": ["cyan"],

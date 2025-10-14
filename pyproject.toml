@@ -99,7 +99,3 @@ reportUnnecessaryTypeIgnoreComment = "warning"
 [tool.isort]
 profile = "black"
 skip_gitignore = true
-known_third_party = ["vhs"]
-
-[tool.changelog_keeper]
-version_format = "python-semver"

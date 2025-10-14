@@ -1,0 +1,18 @@
+- id: chk
+  name: changelog keeper
+  description: "Keep CHANGELOG.md up-to-date and well formatted"
+  entry: chk pre-commit-check
+  language: python
+  language_version: "3.13"
+  require_serial: true
+  types_or: [toml, yaml, markdown]
+- id: chk-tags
+  name: changelog keeper (check tags)
+  description: "Check git tags before pushing them"
+  entry: chk pre-commit-check-tag
+  language: python
+  language_version: "3.13"
+  always_run: true
+  pass_filenames: false
+  require_serial: true
+  stages: [pre-push]

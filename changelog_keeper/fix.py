@@ -99,32 +99,24 @@ def format_section_heading_text(section: Section, ctx: Context) -> str:
 
     heading = ""
 
-    if section.type is SectionType.UNRELEASED:
+    if section.is_unreleased():
         heading += ctx.config.unreleased_decorations[0]
-    else:
-        heading += ctx.config.release_decorations[0]
-
-    if section.type is SectionType.UNRELEASED:
         heading += ctx.config.unreleased_name
-    else:
-        heading += f"{version_pre}{section.version}{version_post}"
-
-    if ctx.config.add_release_date:
-        if section.release_date:
-            release_date = section.release_date.isoformat()
-        else:
-            release_date = section.release_date_fmt
-        if release_date is not None:
-            heading += f"{release_date_pre}{release_date}{release_date_post}"
-
-    if section.release_comment:
-        heading += (
-            f"{release_comment_pre}{section.release_comment}{release_comment_post}"
-        )
-
-    if section.type is SectionType.UNRELEASED:
         heading += ctx.config.unreleased_decorations[1]
-    else:
+    elif release := section.as_release():
+        heading += ctx.config.release_decorations[0]
+        heading += f"{version_pre}{release.version}{version_post}"
+        if ctx.config.add_release_date:
+            if release.release_date:
+                release_date = release.release_date.isoformat()
+            else:
+                release_date = release.release_date_fmt
+            if release_date is not None:
+                heading += f"{release_date_pre}{release_date}{release_date_post}"
+        if release.release_comment:
+            heading += (
+                f"{release_comment_pre}{release.release_comment}{release_comment_post}"
+            )
         heading += ctx.config.release_decorations[1]
 
     return heading
@@ -137,71 +129,76 @@ def format_section_heading(section: Section, ctx: Context) -> SyntaxTreeNode:
 
     inline: list[Token] = []
 
-    if section.type is SectionType.UNRELEASED:
+    if unreleased := section.as_unreleased():
         if ctx.config.unreleased_decorations[0]:
             inline.append(
                 Token("text", "", 0, content=ctx.config.unreleased_decorations[0])
             )
-    else:
+        if unreleased.version_link and ctx.config.add_release_link:
+            inline.append(
+                Token(
+                    "link_open",
+                    "a",
+                    1,
+                    attrs={"href": unreleased.version_link},
+                    meta={"label": unreleased.version_label},
+                )
+            )
+        inline.append(Token("text", "", 0, content=ctx.config.unreleased_name))
+        if unreleased.version_link and ctx.config.add_release_link:
+            inline.append(Token("link_close", "a", -1))
+        if ctx.config.unreleased_decorations[1]:
+            inline.append(
+                Token("text", "", 0, content=ctx.config.unreleased_decorations[1])
+            )
+    elif release := section.as_release():
         if ctx.config.release_decorations[0]:
             inline.append(
                 Token("text", "", 0, content=ctx.config.release_decorations[0])
             )
 
-    if section.version_link and ctx.config.add_release_link:
+        if release.version_link and ctx.config.add_release_link:
+            inline.append(
+                Token(
+                    "link_open",
+                    "a",
+                    1,
+                    attrs={"href": release.version_link},
+                    meta={"label": release.version_label},
+                )
+            )
         inline.append(
             Token(
-                "link_open",
-                "a",
-                1,
-                attrs={"href": section.version_link},
-                meta={"label": section.version_label},
+                "text", "", 0, content=f"{version_pre}{release.version}{version_post}"
             )
         )
+        if release.version_link and ctx.config.add_release_link:
+            inline.append(Token("link_close", "a", -1))
 
-    if section.type is SectionType.UNRELEASED:
-        inline.append(Token("text", "", 0, content=ctx.config.unreleased_name))
-    else:
-        inline.append(
-            Token(
-                "text", "", 0, content=f"{version_pre}{section.version}{version_post}"
-            )
-        )
-
-    if section.version_link and ctx.config.add_release_link:
-        inline.append(Token("link_close", "a", -1))
-
-    if ctx.config.add_release_date:
-        if section.release_date:
-            release_date = section.release_date.isoformat()
-        else:
-            release_date = section.release_date_fmt
-        if release_date is not None:
+        if ctx.config.add_release_date:
+            if release.release_date:
+                release_date = release.release_date.isoformat()
+            else:
+                release_date = release.release_date_fmt
+            if release_date is not None:
+                inline.append(
+                    Token(
+                        "text",
+                        "",
+                        0,
+                        content=f"{release_date_pre}{release_date}{release_date_post}",
+                    )
+                )
+        if release.release_comment:
             inline.append(
                 Token(
                     "text",
                     "",
                     0,
-                    content=f"{release_date_pre}{release_date}{release_date_post}",
+                    content=f"{release_comment_pre}{release.release_comment}{release_comment_post}",
                 )
             )
 
-    if section.release_comment:
-        inline.append(
-            Token(
-                "text",
-                "",
-                0,
-                content=f"{release_comment_pre}{section.release_comment}{release_comment_post}",
-            )
-        )
-
-    if section.type is SectionType.UNRELEASED:
-        if ctx.config.unreleased_decorations[1]:
-            inline.append(
-                Token("text", "", 0, content=ctx.config.unreleased_decorations[1])
-            )
-    else:
         if ctx.config.release_decorations[1]:
             inline.append(
                 Token("text", "", 0, content=ctx.config.release_decorations[1])

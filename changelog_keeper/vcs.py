@@ -61,7 +61,7 @@ def get_repo_versions(root: pathlib.Path, ctx: Context) -> dict[str, RepoVersion
                 if parsed_version is None:
                     ctx.issue(
                         IssueCode.INVALID_TAG,
-                        "Tag %s doesn't doesn't follow %s specification.",
+                        "Tag %s doesn't doesn't follow %s specification",
                         tag,
                         ctx.config.version_format.value,
                         scope=IssueScope.EXTERNAL,

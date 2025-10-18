@@ -70,6 +70,10 @@ Fix
 
 --dry-run
     Doesn't save changes. Instead, prints colored diff to ``stderr``.
+    Implies :flag:`--diff`.
+
+--diff
+    Print diff for produced changes.
 
 
 Bump
@@ -77,8 +81,8 @@ Bump
 
 .. code-block:: console
 
-    $ chk bump [<options>] [--ignore-errors] [--dry-run] [--edit] <version>
-    $ chk bump [<options>] [--ignore-errors] [--dry-run] [--edit] [auto|major|minor|patch|post] [--alpha|--beta|--rc]
+    $ chk bump [<options>] [--ignore-errors] [--dry-run] [--edit] [--commit] <version>
+    $ chk bump [<options>] [--ignore-errors] [--dry-run] [--edit] [--commit] [auto|major|minor|patch|post] [--alpha|--beta|--rc]
 
 -   First form moves entries from the ``unreleased`` section to a new release
     for the specific version.
@@ -125,6 +129,10 @@ Bump
 --edit
     Opens an editor and allows changing contents of the new release section
     before saving changes.
+
+--commit
+    Commit and tag the new release. Changelog Keeper will pause before committing
+    and allow you to inspect repository or cancel the commit.
 
 
 **Examples:**

@@ -238,6 +238,8 @@ def bump(
     rc: bool = yuio.app.field(default=False, group=_PRE_RELEASE_GROUP),
     #: open generated changes for editing
     edit: bool = False,
+    #: commit and tag the release after updating changelog.
+    commit: bool = False,
 ):
     """
     move entries from `unreleased` to a new release.
@@ -257,6 +259,31 @@ def bump(
     file = _locate_changelog(config)
     original = file.read_text()
 
+    if commit:
+        repo = yuio.git.Repo(file.parent)
+        status = repo.status()
+        if status.cherry_pick_head:
+            raise yuio.app.AppError("Can't bump changelog: cherry pick is in progress")
+        if status.merge_head:
+            raise yuio.app.AppError("Can't bump changelog: merge is in progress")
+        if status.rebase_head:
+            raise yuio.app.AppError("Can't bump changelog: rebase is in progress")
+        if status.revert_head:
+            raise yuio.app.AppError("Can't bump changelog: revert is in progress")
+        if not status.branch:
+            raise yuio.app.AppError("Can't bump changelog: git head is detached")
+        changes = [
+            str(ch.path)
+            for ch in status.changes
+            if ch.tree != yuio.git.Modification.UNMODIFIED
+        ]
+        if changes:
+            raise yuio.app.AppError(
+                "Repository has unstaged changes. Please, stage them or stash them.\n"
+                "Changed files:\n  <c path>%s</c>",
+                "\n  ".join(changes),
+            )
+
     ctx = Context(
         file,
         original,
@@ -266,7 +293,7 @@ def bump(
     )
 
     if isinstance(version, str) and version.startswith(config.tag_prefix):
-        version = yuio.git.Tag(version[len(config.tag_prefix) :])
+        version = version[len(config.tag_prefix) :]
 
     changelog = _parse(ctx)
 
@@ -356,7 +383,72 @@ def bump(
     else:
         _print_diff(original, result, file)
 
-    ctx.exit_if_has_errors()
+    if commit:
+        yuio.io.heading("Commit")
+    if ctx.has_errors() and commit:
+        yuio.io.warning("Not committing changes: errors detected")
+        ctx.exit_if_has_errors()
+    tag = f"{config.tag_prefix}{version}"
+    if commit and not dry_run:
+        repo = yuio.git.Repo(file.parent)
+        status = repo.status()
+        yuio.io.info(
+            "On branch `%s`, `%s` ahead, `%s` behind, ready to commit release `%s`, tag `%s`",
+            status.branch,
+            status.ahead,
+            status.behind,
+            version,
+            tag,
+        )
+        yuio.io.info("Current git status:")
+        for change in status.changes:
+            path = (
+                change.path
+                if change.path_from is None
+                else f"{change.path_from} -> {change.path}"
+            )
+            yuio.io.info(
+                "  <c path>%s</c>: `%s%s`", path, change.staged.value, change.tree.value
+            )
+        yuio.io.info(
+            "\nYou can take a look around and make any changes before proceeding.\n"
+        )
+        ok = yuio.io.ask[bool]("Proceed?", default=False)
+        message = f"Release {version}"
+        if not ok:
+            yuio.io.failure("Commit canceled")
+            yuio.io.md(
+                """
+                Use this command to commit changes:
+
+                ```sh
+                git add %s
+                git commit -m '%s'
+                git tag %s
+                ```
+                """,
+                file.relative_to(pathlib.Path.cwd(), walk_up=True),
+                message,
+                tag,
+            )
+            raise yuio.app.AppError()
+        # repo.git("add", str(file))
+        # repo.git("commit", "-m", message)
+        # repo.git("tag", tag)
+        status = repo.status()
+        yuio.io.success("Created commit `%s` and tag `%s`.", status.commit, tag)
+        yuio.io.md(
+            """
+            Use `git commit --amend` and `git tag` to update commit contents or message:
+
+            ```sh
+            git commit --amend && git tag -f %s
+            ```
+            """,
+            tag,
+        )
+    if commit and dry_run:
+        yuio.io.success("Dry-run: not committing and creating tag `%s`", tag)
 
 
 bump.usage = """

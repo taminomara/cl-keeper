@@ -100,3 +100,6 @@ reportUnnecessaryTypeIgnoreComment = "warning"
 [tool.isort]
 profile = "black"
 skip_gitignore = true
+
+[tool.cl_keeper]
+version_format = "python-semver"

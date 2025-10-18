@@ -1,0 +1,68 @@
+name: Changelog Keeper action
+description: Parse changelog and extract notes for a release.
+author: Tamika Nomara
+
+# Add your action's branding here. This will appear on the GitHub Marketplace.
+branding:
+  icon: heart
+  color: red
+
+inputs:
+  config:
+    description: Path to the config file, relative to repository root.
+    required: false
+  changelog:
+    description: Path to the changelog file, relative to repository root.
+    required: false
+  version:
+    description: Version to search for, default is "latest".
+    required: true
+    default: latest
+  strict:
+    description: Run changelog keeper in strict mode.
+    required: true
+    default: "false"
+  ignore-errors:
+    description: Ignore issues found in changelog.
+    required: true
+    default: "false"
+
+outputs:
+  text:
+    description: Extracted markdown text.
+    value: ${{ fromJSON(steps.run-chk.outputs.data).text }}
+  is-latest:
+    description: Indicates that this is the latest release so far.
+    value: ${{ fromJSON(steps.run-chk.outputs.data).isLatestInSemanticOrder }}
+  is-pre-release:
+    description: Indicates that this is a pre-release.
+    value: ${{ fromJSON(steps.run-chk.outputs.data).isPreRelease }}
+  is-post-release:
+    description: Indicates that this is a post-release.
+    value: ${{ fromJSON(steps.run-chk.outputs.data).isPostRelease }}
+  is-unreleased:
+    description: Indicates that action returned an unreleased section of changelog.
+    value: ${{ fromJSON(steps.run-chk.outputs.data).isUnreleased }}
+  data:
+    description: Full JSON output of the "chk find" command.
+    value: ${{ steps.run-chk.outputs.data }}
+
+runs:
+  using: composite
+  steps:
+    - name: Install Changelog Keeper
+      uses: threeal/pipx-install-action@v1.0.0
+      with:
+        packages: ${{ github.action_path }}
+    - name: Run Changelog Keeper
+      id: run-chk
+      shell: bash
+      run: |
+        echo 'data<<EOF' >> $GITHUB_OUTPUT
+        chk find ${{ inputs.version }} --json $FLAG_CONFIG $FLAG_CHANGELOG $FLAG_STRICT $FLAG_IGNORE_ERRORS >> $GITHUB_OUTPUT
+        echo 'EOF' >> $GITHUB_OUTPUT
+      env:
+        FLAG_CONFIG: ${{ inputs.config != '' && format('-c {0}', inputs.config) || '' }}
+        FLAG_CHANGELOG: ${{ inputs.changelog != '' && format('-i {0}', inputs.changelog) || '' }}
+        FLAG_STRICT: ${{ (inputs.strict == 'true' || inputs.strict == true) && '--strict' || '' }}
+        FLAG_IGNORE_ERRORS: ${{ (inputs.ignore-errors == 'true' || inputs.ignore-errors == true) && '--ignore-errors' || '' }}

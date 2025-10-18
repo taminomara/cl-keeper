@@ -107,11 +107,6 @@ main.epilog = """
   ```
 
 - online documentation: https://cl-keeper.readthedocs.io/.
-  Alternatively, check out
-
-  ```sh
-  man chk
-  ```
 
 - changelog format: https://keepachangelog.com/
 """
@@ -432,9 +427,9 @@ def bump(
                 tag,
             )
             raise yuio.app.AppError()
-        # repo.git("add", str(file))
-        # repo.git("commit", "-m", message)
-        # repo.git("tag", tag)
+        repo.git("add", str(file))
+        repo.git("commit", "-m", message)
+        repo.git("tag", tag)
         status = repo.status()
         yuio.io.success("Created commit `%s` and tag `%s`.", status.commit, tag)
         yuio.io.md(

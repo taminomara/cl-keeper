@@ -1,24 +1,29 @@
 [project]
 name = "cl-keeper"
 authors = [{name = "Tamika Nomara", email = "taminomara@gmail.com"}]
-description = "A CLI tool for keeping your changelogs"
+description = "A CLI tool for keeping your changelogs tidy"
 dynamic = ["version"]
 readme = "README.md"
 license = "MIT"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
-    "Framework :: Sphinx",
-    "Framework :: Sphinx :: Extension",
-    "Topic :: Software Development :: Documentation",
-    "Topic :: Documentation",
-    "Topic :: Documentation :: Sphinx",
+    "Programming Language :: Python :: 3.14",
+    "Environment :: Console",
     "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "Natural Language :: English",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Topic :: Software Development",
+    "Topic :: Software Development :: Quality Assurance",
+    "Topic :: Software Development :: Version Control :: Git",
+    "Topic :: Utilities",
     "Typing :: Typed",
 ]
 dependencies = [

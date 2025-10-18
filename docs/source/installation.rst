@@ -26,7 +26,7 @@ dependency in ``pyproject.toml``:
         "cl-keeper~=1.0",
     ]
 
-Python 3.13 or higher is required.
+Python 3.12 or higher is required.
 
 
 With pre-commit

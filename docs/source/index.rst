@@ -66,4 +66,4 @@ Contents
     :hidden:
     :caption: Links
 
-    GitHub <https://github.com/taminomara/ch-keeper>
+    GitHub <https://github.com/taminomara/cl-keeper>

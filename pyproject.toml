@@ -1,5 +1,5 @@
 [project]
-name = "ch-keeper"
+name = "cl-keeper"
 authors = [{name = "Tamika Nomara", email = "taminomara@gmail.com"}]
 description = "A CLI tool for keeping your changelogs"
 dynamic = ["version"]
@@ -60,10 +60,10 @@ doc = [
 ]
 
 [project.urls]
-Documentation = "https://ch-keeper.readthedocs.io/en/stable/"
-Issues = "https://github.com/taminomara/ch-keeper/issues/"
-Source = "https://github.com/taminomara/ch-keeper/"
-Changelog = "https://github.com/taminomara/ch-keeper/blob/main/CHANGELOG.md"
+Documentation = "https://cl-keeper.readthedocs.io/en/stable/"
+Issues = "https://github.com/taminomara/cl-keeper/issues/"
+Source = "https://github.com/taminomara/cl-keeper/"
+Changelog = "https://github.com/taminomara/cl-keeper/blob/main/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
 include = ["ch_keeper"]

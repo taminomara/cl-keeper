@@ -106,7 +106,7 @@ main.epilog = """
   chk <subcommand> --help
   ```
 
-- online documentation: https://ch-keeper.readthedocs.io/.
+- online documentation: https://cl-keeper.readthedocs.io/.
   Alternatively, check out
 
   ```sh

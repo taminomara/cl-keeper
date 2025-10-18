@@ -43,7 +43,7 @@ html_theme = "furo"
 html_static_path = ["_static"]
 html_css_files = ["extra.css"]
 html_theme_options = {
-    "source_repository": "https://github.com/taminomara/ch-keeper",
+    "source_repository": "https://github.com/taminomara/cl-keeper",
     "source_branch": "main",
     "source_directory": "docs/source",
 }
@@ -62,7 +62,7 @@ def on_write_started(app: sphinx.application.Sphinx, builder):
     app.outdir.joinpath("schema.json").write_text(
         json.dumps(
             ctx.render(
-                schema, id="https://ch-keeper.readthedocs.io/en/latest/schema.json"
+                schema, id="https://cl-keeper.readthedocs.io/en/latest/schema.json"
             ),
             indent=2,
         )

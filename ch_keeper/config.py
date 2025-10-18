@@ -294,7 +294,7 @@ class ReleaseLinkPreset(enum.Enum):
 
         release_link_preset: github
         release_link_template_vars:
-            repo: "taminomara/ch-keeper"
+            repo: "taminomara/cl-keeper"
 
     """
 
@@ -315,7 +315,7 @@ class ReleaseLinkPreset(enum.Enum):
 
         release_link_preset: gitlab
         release_link_template_vars:
-            repo: "taminomara/ch-keeper"
+            repo: "taminomara/cl-keeper"
 
     """
 
@@ -761,7 +761,7 @@ class Config(yuio.config.Config):
         release_link_template: "https://{host}/{repo}/compare/{prev_tag}...{tag}"
         release_link_template_vars:
             host: "github.com"
-            repo: "taminomara/ch-keeper"
+            repo: "taminomara/cl-keeper"
 
     """
 
@@ -784,7 +784,7 @@ class Config(yuio.config.Config):
         release_link_template_last: "https://{host}/{repo}/compare/{prev_tag}...HEAD"
         release_link_template_vars:
             host: "github.com"
-            repo: "taminomara/ch-keeper"
+            repo: "taminomara/cl-keeper"
 
     """
 
@@ -807,7 +807,7 @@ class Config(yuio.config.Config):
         release_link_template_first: "https://{host}/{repo}/releases/tag/{tag}"
         release_link_template_vars:
             host: "github.com"
-            repo: "taminomara/ch-keeper"
+            repo: "taminomara/cl-keeper"
 
     """
 

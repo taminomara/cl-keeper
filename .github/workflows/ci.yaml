@@ -71,7 +71,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: pypi
-      url: https://pypi.org/p/ch-keeper
+      url: https://pypi.org/p/cl-keeper
     permissions:
       contents: write
       id-token: write
@@ -85,7 +85,7 @@ jobs:
         run: |
           ref="${{ github.ref }}";
           version=${ref#refs/tags/v};
-          link="https://pypi.org/p/ch-keeper/${version}/";
+          link="https://pypi.org/p/cl-keeper/${version}/";
           echo "version=${version}" >> $GITHUB_OUTPUT
           echo "link=${link}" >> $GITHUB_OUTPUT
       - name: Parse Changelog

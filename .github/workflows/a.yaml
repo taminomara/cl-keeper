@@ -14,8 +14,20 @@ jobs:
     name: Test package
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout source
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - uses: ./
+        id: chk
+      - shell: bash
+        run: |
+          echo 'text='
+          echo '${{steps.chk.outputs.text}}'
+          echo 'is-latest='
+          echo '${{steps.chk.outputs.is-latest}}'
+          echo 'is-pre-release='
+          echo '${{steps.chk.outputs.is-pre-release}}'
+          echo 'is-post-release='
+          echo '${{steps.chk.outputs.is-post-release}}'
+          echo 'is-unreleased='
+          echo '${{steps.chk.outputs.is-unreleased}}'

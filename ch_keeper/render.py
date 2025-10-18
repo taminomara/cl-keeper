@@ -40,7 +40,7 @@ def print_diff(l: str, r: str, path: pathlib.Path):
         )
     )
 
-    yuio.io.heading("Dry-run diff")
+    yuio.io.heading("Diff")
 
     if not diff:
         yuio.io.info("Diff is empty")

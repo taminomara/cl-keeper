@@ -152,6 +152,8 @@ def check():
 def fix(
     #: don't save changes, print the diff instead
     dry_run: bool = False,
+    #: print diff
+    diff: bool = False,
 ):
     """
     fix contents of the changelog file.
@@ -195,7 +197,7 @@ def fix(
         yuio.io.heading("Unfixed issues")
         ctx.report()
 
-    if dry_run:
+    if dry_run or diff:
         _print_diff(original, result, file)
 
 
@@ -656,7 +658,9 @@ def check_tag(
 
 
 @main.subcommand(help=yuio.DISABLED)
-def pre_commit_check(changed_files: set[pathlib.Path] = yuio.app.positional()):
+def pre_commit_check(
+    diff: bool = False, changed_files: set[pathlib.Path] = yuio.app.positional()
+):
     """
     same as `fix`, but expects list of changed files as command line arguments,
     and doesn't perform fix if changelog is not updated.
@@ -671,7 +675,7 @@ def pre_commit_check(changed_files: set[pathlib.Path] = yuio.app.positional()):
     ):
         return
 
-    fix.command()
+    fix.command(diff=diff)
 
 
 @main.subcommand(help=yuio.DISABLED)

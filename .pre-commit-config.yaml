@@ -16,7 +16,7 @@ repos:
       - id: chk
         name: changelog keeper
         language: system
-        entry: chk pre-commit-check
+        entry: chk pre-commit-check --diff
         require_serial: true
         types_or: [toml, yaml, markdown]
       - id: chk-tags

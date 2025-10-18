@@ -90,7 +90,7 @@ jobs:
           echo "link=${link}" >> $GITHUB_OUTPUT
       - name: Parse Changelog
         id: changelog
-        uses: mindsers/changelog-reader-action@v2
+        uses: ./
         with:
           version: ${{ steps.metadata.outputs.version }}
       - name: Set up python 3.13
@@ -103,18 +103,18 @@ jobs:
       - name: Build project
         run: |
           python3 -m build .
-      - name: Publish to pypi
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          attestations: false
+      # - name: Publish to pypi
+      #   uses: pypa/gh-action-pypi-publish@release/v1
+      #   with:
+      #     attestations: false
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
-          prerelease: ${{ steps.changelog.outputs.status == 'prereleased' }}
-          draft: ${{ steps.changelog.outputs.status == 'unreleased' }}
+          prerelease: ${{ steps.changelog.outputs.is-pre-release }}
+          draft: ${{ steps.changelog.outputs.is-unreleased }}
           body: |
             ## Changelog
 
-            ${{ steps.changelog.outputs.changes }}
+            ${{ steps.changelog.outputs.text }}
 
             [See release on PyPi](${{ steps.metadata.outputs.link }})

@@ -6,8 +6,8 @@ import typing as _t
 
 import yuio.io
 
-from ch_keeper.config import Config, IssueCode, IssueSeverity, LinkTemplates
-from ch_keeper.typing import SupportsPos
+from cl_keeper.config import Config, IssueCode, IssueSeverity, LinkTemplates
+from cl_keeper.typing import SupportsPos
 
 
 class IssueScope(enum.Enum):

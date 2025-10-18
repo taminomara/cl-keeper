@@ -3,8 +3,8 @@ from __future__ import annotations
 import math
 import typing as _t
 
-from ch_keeper.model import Section, SubSection
-from ch_keeper.typing import Ord, SupportsPos
+from cl_keeper.model import Section, SubSection
+from cl_keeper.typing import Ord, SupportsPos
 
 
 def sorted_sections(sections: _t.Iterable[Section]) -> list[Section]:

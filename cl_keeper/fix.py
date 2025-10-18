@@ -1,8 +1,8 @@
 from markdown_it.token import Token
 from markdown_it.tree import SyntaxTreeNode
 
-from ch_keeper.context import Context
-from ch_keeper.model import (
+from cl_keeper.context import Context
+from cl_keeper.model import (
     Changelog,
     ReleaseSection,
     RepoVersion,
@@ -12,7 +12,7 @@ from ch_keeper.model import (
     SubSectionType,
     UnreleasedSection,
 )
-from ch_keeper.sort import sorted_sections, sorted_subsections
+from cl_keeper.sort import sorted_sections, sorted_subsections
 
 
 def fix(

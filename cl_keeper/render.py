@@ -5,9 +5,9 @@ import yuio.io
 import yuio.md
 from markdown_it.token import Token
 
-from ch_keeper.config import Wrapping
-from ch_keeper.context import Context
-from ch_keeper.model import Changelog
+from cl_keeper.config import Wrapping
+from cl_keeper.context import Context
+from cl_keeper.model import Changelog
 
 
 def render(

@@ -93,6 +93,7 @@ jobs:
         uses: ./
         with:
           version: ${{ steps.metadata.outputs.version }}
+          strict: true
       - name: Set up python 3.13
         uses: actions/setup-python@v4
         with:
@@ -103,10 +104,10 @@ jobs:
       - name: Build project
         run: |
           python3 -m build .
-      # - name: Publish to pypi
-      #   uses: pypa/gh-action-pypi-publish@release/v1
-      #   with:
-      #     attestations: false
+      - name: Publish to pypi
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          attestations: false
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:

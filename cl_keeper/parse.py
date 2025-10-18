@@ -9,10 +9,10 @@ from markdown_it import MarkdownIt
 from markdown_it.tree import SyntaxTreeNode
 from mdformat.renderer import MDRenderer
 
-from ch_keeper.config import Config, VersionFormat
-from ch_keeper.context import Context, IssueCode
-from ch_keeper.fix import format_section_heading_text
-from ch_keeper.model import (
+from cl_keeper.config import Config, VersionFormat
+from cl_keeper.context import Context, IssueCode
+from cl_keeper.fix import format_section_heading_text
+from cl_keeper.model import (
     Changelog,
     ReleaseSection,
     Section,

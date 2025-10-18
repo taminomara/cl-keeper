@@ -66,24 +66,24 @@ Source = "https://github.com/taminomara/cl-keeper/"
 Changelog = "https://github.com/taminomara/cl-keeper/blob/main/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
-include = ["ch_keeper"]
+include = ["cl_keeper"]
 
 [project.scripts]
-chk = "ch_keeper.app:main.run"
+chk = "cl_keeper.app:main.run"
 
 [build-system]
 requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2", "wheel>=0.40"]
 
 [tool.setuptools_scm]
-write_to = "ch_keeper/_version.py"
+write_to = "cl_keeper/_version.py"
 
 [tool.pytest.ini_options]
 minversion = "7.0"
 addopts = ["--strict-markers", "-p no:doctest"]
-testpaths = ["test", "ch_keeper", "docs"]
+testpaths = ["test", "cl_keeper", "docs"]
 
 [tool.pyright]
-include = ["ch_keeper"]
+include = ["cl_keeper"]
 exclude = ["**/__pycache__"]
 typeCheckingMode = "strict"
 pythonVersion = "3.12"

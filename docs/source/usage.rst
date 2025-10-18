@@ -1,17 +1,24 @@
 Usage
 =====
 
-.. currentmodule:: ch_keeper.config
+.. currentmodule:: cl_keeper.config
 
 .. role:: flag
     :class: flag
 
 Changelog Keeper's command is called  :program:`chk`. It comes with four main subcommands:
 
-:**chk check**: checks contents of the changelog file.
-:**chk fix**: fixes contents of the changelog file.
-:**chk bump**: moves entries from the ``unreleased`` section to a new release.
-:**chk find**: searches a changelog entry for the given release version.
+**chk check**
+    checks contents of the changelog file.
+
+**chk fix**
+    fixes contents of the changelog file.
+
+**chk bump**
+    moves entries from the ``unreleased`` section to a new release.
+
+**chk find**
+    searches a changelog entry for the given release version.
 
 All of them accept a few universal flags:
 

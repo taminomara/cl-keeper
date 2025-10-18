@@ -20,18 +20,18 @@ import yuio.parse
 import yuio.theme
 from markdown_it.tree import SyntaxTreeNode
 
-from ch_keeper._version import __version__
-from ch_keeper.check import check as _check
-from ch_keeper.config import (
+from cl_keeper._version import __version__
+from cl_keeper.check import check as _check
+from cl_keeper.config import (
     PYTHON_PRESET,
     Config,
     GlobalConfig,
     LinkTemplates,
     VersionFormat,
 )
-from ch_keeper.context import Context, IssueCode, IssueScope
-from ch_keeper.fix import fix as _fix
-from ch_keeper.model import (
+from cl_keeper.context import Context, IssueCode, IssueScope
+from cl_keeper.fix import fix as _fix
+from cl_keeper.model import (
     Changelog,
     ReleaseSection,
     RepoVersion,
@@ -41,16 +41,16 @@ from ch_keeper.model import (
     UnreleasedSection,
     Version,
 )
-from ch_keeper.parse import canonize_version as _canonize_version
-from ch_keeper.parse import detect_subsection_metadata as _detect_subsection_metadata
-from ch_keeper.parse import parse as _parse
-from ch_keeper.parse import parse_version as _parse_version
-from ch_keeper.parse import split_into_sections as _split_into_sections
-from ch_keeper.render import print_diff as _print_diff
-from ch_keeper.render import render as _render
-from ch_keeper.sort import merge_sections as _merge_sections
-from ch_keeper.vcs import detect_origin as _detect_origin
-from ch_keeper.vcs import get_repo_versions
+from cl_keeper.parse import canonize_version as _canonize_version
+from cl_keeper.parse import detect_subsection_metadata as _detect_subsection_metadata
+from cl_keeper.parse import parse as _parse
+from cl_keeper.parse import parse_version as _parse_version
+from cl_keeper.parse import split_into_sections as _split_into_sections
+from cl_keeper.render import print_diff as _print_diff
+from cl_keeper.render import render as _render
+from cl_keeper.sort import merge_sections as _merge_sections
+from cl_keeper.vcs import detect_origin as _detect_origin
+from cl_keeper.vcs import get_repo_versions
 
 logger = logging.getLogger(__name__)
 
@@ -441,8 +441,8 @@ def find(
     file = _locate_changelog(config)
     original = file.read_text()
 
-    if isinstance(version, str) and version.startswith(config.tag_prefix):
-        version = version[len(config.tag_prefix) :]
+    if isinstance(version, str):
+        version = version.removeprefix("refs/tags/").removeprefix(config.tag_prefix)
 
     ctx = Context(
         file,
@@ -765,10 +765,10 @@ def _load_config() -> Config:
             logger.debug("config = %r", config)
             return config
         try:
-            data = data["tool"]["ch_keeper"]
+            data = data["tool"]["cl_keeper"]
         except KeyError as e:
             logger.debug(
-                "%s doesn't have section tool.ch_keeper",
+                "%s doesn't have section tool.cl_keeper",
                 _GLOBAL_OPTIONS.config_path,
             )
             logger.info("using config from %s", _GLOBAL_OPTIONS.config_path)

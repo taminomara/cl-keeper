@@ -4,15 +4,15 @@ import pathlib
 import giturlparse
 import yuio.git
 
-from ch_keeper.config import (
+from cl_keeper.config import (
     IssueCode,
     LinkTemplates,
     ReleaseLinkPreset,
     VersionFormat,
 )
-from ch_keeper.context import Context, IssueScope
-from ch_keeper.model import RepoVersion
-from ch_keeper.parse import canonize_version, parse_version
+from cl_keeper.context import Context, IssueScope
+from cl_keeper.model import RepoVersion
+from cl_keeper.parse import canonize_version, parse_version
 
 logger = logging.getLogger(__name__)
 

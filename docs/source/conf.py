@@ -6,15 +6,15 @@ import sphinx.builders
 import sphinx.builders.html
 import yuio.json_schema
 
-import ch_keeper
-import ch_keeper.config
+import cl_keeper
+import cl_keeper.config
 
 # -- Project information -----------------------------------------------------
 
 project = "Changelog Keeper CLI"
 copyright = f"{datetime.date.today().year}, Tamika Nomara"
 author = "Tamika Nomara"
-release = version = ch_keeper.__version__
+release = version = cl_keeper.__version__
 
 
 # -- General configuration ---------------------------------------------------
@@ -55,9 +55,9 @@ def on_write_started(app: sphinx.application.Sphinx, builder):
 
     ctx = yuio.json_schema.JsonSchemaContext()
     schema = yuio.json_schema.Meta(
-        ch_keeper.config.Config.to_json_schema(ctx),
-        title=ch_keeper.config.Config.__name__,
-        description=ch_keeper.config.Config.__doc__,
+        cl_keeper.config.Config.to_json_schema(ctx),
+        title=cl_keeper.config.Config.__name__,
+        description=cl_keeper.config.Config.__doc__,
     )
     app.outdir.joinpath("schema.json").write_text(
         json.dumps(
@@ -73,7 +73,7 @@ def setup(app: sphinx.application.Sphinx):
     app.connect("write-started", on_write_started)
 
     return {
-        "version": ch_keeper.__version__,
+        "version": cl_keeper.__version__,
         "parallel_read_safe": True,
         "parallel_write_safe": True,
     }

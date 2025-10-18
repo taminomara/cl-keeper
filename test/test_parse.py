@@ -2,8 +2,8 @@ import pytest
 from packaging.version import Version as PyVersion
 from semver import Version as SemverVersion
 
-from ch_keeper.config import Config, VersionFormat
-from ch_keeper.parse import canonize_version, parse_version
+from cl_keeper.config import Config, VersionFormat
+from cl_keeper.parse import canonize_version, parse_version
 
 
 @pytest.mark.parametrize(

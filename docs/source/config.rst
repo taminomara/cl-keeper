@@ -1,11 +1,11 @@
 Config
 ======
 
-.. currentmodule:: ch_keeper.config
+.. currentmodule:: cl_keeper.config
 
 Changelog Keeper searches for ``.changelog.yaml``, ``.changelog.toml``,
 or ``pyproject.toml``. In ``pyproject.toml``, keeper's config is located under the
-``tool.ch_keeper`` key.
+``tool.cl_keeper`` key.
 
 
 Example
@@ -24,7 +24,7 @@ Example
 
         .. code-block:: toml
 
-            [tool.ch_keeper]
+            [tool.cl_keeper]
 
             version_format = "python-semver"
             tag_prefix = ""

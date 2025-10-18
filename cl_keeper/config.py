@@ -386,8 +386,6 @@ class VersionFormat(enum.Enum):
           - ``1.0.0-post0``
           - ``1.0.0-beta0.post0``
 
-
-
     """
 
     SEMVER = "semver"
@@ -889,7 +887,7 @@ class Config(yuio.config.Config):
 
     @functools.cached_property
     def parsed_ignore_missing_releases_before(self):
-        from ch_keeper.parse import parse_version
+        from cl_keeper.parse import parse_version
 
         if self.ignore_missing_releases_before is None:
             return None

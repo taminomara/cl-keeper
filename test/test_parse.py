@@ -1,0 +1,117 @@
+import pytest
+from packaging.version import Version as PyVersion
+from semver import Version as SemverVersion
+
+from ch_keeper.config import Config, VersionFormat
+from ch_keeper.parse import canonize_version, parse_version
+
+
+@pytest.mark.parametrize(
+    "format,version,expected",
+    [
+        (VersionFormat.NONE, "whatever", None),
+        (
+            VersionFormat.SEMVER,
+            "1.0.0-beta.0+12345",
+            SemverVersion(1, 0, 0, "beta.0", "12345"),
+        ),
+        (VersionFormat.SEMVER_STRICT, "1.0.0", SemverVersion(1, 0, 0)),
+        (VersionFormat.SEMVER_STRICT, "1.0.0-alpha1", SemverVersion(1, 0, 0, "alpha1")),
+        (VersionFormat.SEMVER_STRICT, "1.0.0-beta1", SemverVersion(1, 0, 0, "beta1")),
+        (VersionFormat.SEMVER_STRICT, "1.0.0-rc1", SemverVersion(1, 0, 0, "rc1")),
+        (VersionFormat.SEMVER_STRICT, "1.0", None),
+        (VersionFormat.SEMVER_STRICT, "1.0.0.0", None),
+        (VersionFormat.SEMVER_STRICT, "1.0.0-beta.1", None),
+        (VersionFormat.SEMVER_STRICT, "1.0.0-foo1", None),
+        (VersionFormat.PYTHON, "1.0.0", PyVersion("1.0.0")),
+        (VersionFormat.PYTHON, "1.0.0b0", PyVersion("1.0.0b0")),
+        (VersionFormat.PYTHON, "1.0.0-beta.0", PyVersion("1.0.0b0")),
+        (VersionFormat.PYTHON, "1.0.0.post0+foo", PyVersion("1.0.0.post0+foo")),
+        (VersionFormat.PYTHON_STRICT, "1.0.0", PyVersion("1.0.0")),
+        (VersionFormat.PYTHON_STRICT, "1.0.0a0", PyVersion("1.0.0a0")),
+        (VersionFormat.PYTHON_STRICT, "1.0.0b0", PyVersion("1.0.0b0")),
+        (VersionFormat.PYTHON_STRICT, "1.0.0rc0", PyVersion("1.0.0rc0")),
+        (VersionFormat.PYTHON_STRICT, "1.0.0.post0", PyVersion("1.0.0.post0")),
+        (VersionFormat.PYTHON_STRICT, "1.0.0a0.post0", PyVersion("1.0.0a0.post0")),
+        (VersionFormat.PYTHON_STRICT, "1.0.0b0.post0", PyVersion("1.0.0b0.post0")),
+        (VersionFormat.PYTHON_STRICT, "1.0.0rc0.post0", PyVersion("1.0.0rc0.post0")),
+        (VersionFormat.PYTHON_STRICT, "1.0.0-a0", None),
+        (VersionFormat.PYTHON_STRICT, "1.0.0-alpha0", None),
+        (VersionFormat.PYTHON_STRICT, "1.0.0a.0", None),
+        (VersionFormat.PYTHON_STRICT, "1.0.0alpha.0", None),
+        (VersionFormat.PYTHON_STRICT, "1.0.0-post0", None),
+        (VersionFormat.PYTHON_STRICT, "1.0.0post.0", None),
+        (VersionFormat.PYTHON_STRICT, "1.0.0.post-0", None),
+        (VersionFormat.PYTHON_SEMVER, "1.0.0", PyVersion("1.0.0")),
+        (VersionFormat.PYTHON_SEMVER, "1.0.0-alpha0", PyVersion("1.0.0a0")),
+        (VersionFormat.PYTHON_SEMVER, "1.0.0-beta0", PyVersion("1.0.0b0")),
+        (VersionFormat.PYTHON_SEMVER, "1.0.0-rc0", PyVersion("1.0.0rc0")),
+        (VersionFormat.PYTHON_SEMVER, "1.0.0-post0", PyVersion("1.0.0.post0")),
+        (VersionFormat.PYTHON_SEMVER, "1.0.0-alpha0.post0", PyVersion("1.0.0a0.post0")),
+        (VersionFormat.PYTHON_SEMVER, "1.0.0-beta0.post0", PyVersion("1.0.0b0.post0")),
+        (VersionFormat.PYTHON_SEMVER, "1.0.0-rc0.post0", PyVersion("1.0.0rc0.post0")),
+        (VersionFormat.PYTHON_SEMVER, "1.0.0a0", None),
+        (VersionFormat.PYTHON_SEMVER, "1.0.0b0", None),
+        (VersionFormat.PYTHON_SEMVER, "1.0.0rc0", None),
+        (VersionFormat.PYTHON_SEMVER, "1.0.0.post0", None),
+        (VersionFormat.PYTHON_SEMVER, "1.0.0a0.post0", None),
+        (VersionFormat.PYTHON_SEMVER, "1.0.0b0.post0", None),
+        (VersionFormat.PYTHON_SEMVER, "1.0.0rc0.post0", None),
+    ],
+)
+def test_parse_version(format, version, expected):
+    assert parse_version(version, Config(version_format=format)) == expected
+
+
+@pytest.mark.parametrize(
+    "format,version,expected",
+    [
+        (VersionFormat.NONE, "whatever", None),
+        (VersionFormat.SEMVER, "1.0.0-beta.0+12345", "1.0.0-beta.0+12345"),
+        (VersionFormat.SEMVER_STRICT, "1.0.0", "1.0.0"),
+        (VersionFormat.SEMVER_STRICT, "1.0.0-alpha1", "1.0.0-alpha1"),
+        (VersionFormat.SEMVER_STRICT, "1.0.0-beta1", "1.0.0-beta1"),
+        (VersionFormat.SEMVER_STRICT, "1.0.0-rc1", "1.0.0-rc1"),
+        (VersionFormat.SEMVER_STRICT, "1.0", None),
+        (VersionFormat.SEMVER_STRICT, "1.0.0.0", None),
+        (VersionFormat.SEMVER_STRICT, "1.0.0-beta.1", None),
+        (VersionFormat.SEMVER_STRICT, "1.0.0-foo1", None),
+        (VersionFormat.PYTHON, "1.0.0", "1.0.0"),
+        (VersionFormat.PYTHON, "1.0.0b0", "1.0.0b0"),
+        (VersionFormat.PYTHON, "1.0.0-beta.0", "1.0.0b0"),
+        (VersionFormat.PYTHON, "1.0.0-beta.post0", "1.0.0b0.post0"),
+        (VersionFormat.PYTHON_STRICT, "1.0.0", "1.0.0"),
+        (VersionFormat.PYTHON_STRICT, "1.0.0a0", "1.0.0a0"),
+        (VersionFormat.PYTHON_STRICT, "1.0.0b0", "1.0.0b0"),
+        (VersionFormat.PYTHON_STRICT, "1.0.0rc0", "1.0.0rc0"),
+        (VersionFormat.PYTHON_STRICT, "1.0.0.post0", "1.0.0.post0"),
+        (VersionFormat.PYTHON_STRICT, "1.0.0a0.post0", "1.0.0a0.post0"),
+        (VersionFormat.PYTHON_STRICT, "1.0.0b0.post0", "1.0.0b0.post0"),
+        (VersionFormat.PYTHON_STRICT, "1.0.0rc0.post0", "1.0.0rc0.post0"),
+        (VersionFormat.PYTHON_STRICT, "1.0.0-a0", None),
+        (VersionFormat.PYTHON_STRICT, "1.0.0-alpha0", None),
+        (VersionFormat.PYTHON_STRICT, "1.0.0a.0", None),
+        (VersionFormat.PYTHON_STRICT, "1.0.0alpha.0", None),
+        (VersionFormat.PYTHON_STRICT, "1.0.0-post0", None),
+        (VersionFormat.PYTHON_STRICT, "1.0.0post.0", None),
+        (VersionFormat.PYTHON_STRICT, "1.0.0.post-0", None),
+        (VersionFormat.PYTHON_SEMVER, "1.0.0", "1.0.0"),
+        (VersionFormat.PYTHON_SEMVER, "1.0.0-alpha0", "1.0.0-alpha0"),
+        (VersionFormat.PYTHON_SEMVER, "1.0.0-beta0", "1.0.0-beta0"),
+        (VersionFormat.PYTHON_SEMVER, "1.0.0-rc0", "1.0.0-rc0"),
+        (VersionFormat.PYTHON_SEMVER, "1.0.0-post0", "1.0.0-post0"),
+        (VersionFormat.PYTHON_SEMVER, "1.0.0-alpha0.post0", "1.0.0-alpha0.post0"),
+        (VersionFormat.PYTHON_SEMVER, "1.0.0-beta0.post0", "1.0.0-beta0.post0"),
+        (VersionFormat.PYTHON_SEMVER, "1.0.0-rc0.post0", "1.0.0-rc0.post0"),
+        (VersionFormat.PYTHON_SEMVER, "1.0.0a0", None),
+        (VersionFormat.PYTHON_SEMVER, "1.0.0b0", None),
+        (VersionFormat.PYTHON_SEMVER, "1.0.0rc0", None),
+        (VersionFormat.PYTHON_SEMVER, "1.0.0.post0", None),
+        (VersionFormat.PYTHON_SEMVER, "1.0.0a0.post0", None),
+        (VersionFormat.PYTHON_SEMVER, "1.0.0b0.post0", None),
+        (VersionFormat.PYTHON_SEMVER, "1.0.0rc0.post0", None),
+    ],
+)
+def test_canonize(format, version, expected):
+    config = Config(version_format=format)
+    assert canonize_version(parse_version(version, config), config) == expected

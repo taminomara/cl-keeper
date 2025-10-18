@@ -9,10 +9,10 @@ from markdown_it import MarkdownIt
 from markdown_it.tree import SyntaxTreeNode
 from mdformat.renderer import MDRenderer
 
-from changelog_keeper.config import Config, TagFormat
-from changelog_keeper.context import Context, IssueCode
-from changelog_keeper.fix import format_section_heading_text
-from changelog_keeper.model import (
+from ch_keeper.config import Config, VersionFormat
+from ch_keeper.context import Context, IssueCode
+from ch_keeper.fix import format_section_heading_text
+from ch_keeper.model import (
     Changelog,
     ReleaseSection,
     Section,
@@ -194,7 +194,7 @@ def create_section(
     version = version_match.group(0)
 
     parsed_version = parse_version(version, ctx.config)
-    if parsed_version is None:
+    if parsed_version is None and ctx.config.version_format is not VersionFormat.NONE:
         ctx.issue(
             IssueCode.INVALID_VERSION,
             "Version `%s` doesn't follow %s specification",
@@ -420,23 +420,23 @@ def parse_version(version: str | None, config: Config) -> Version | None:
         return None
     try:
         match config.version_format:
-            case TagFormat.SEMVER:
+            case VersionFormat.SEMVER:
                 return _t.cast(Version, semver.Version.parse(version))
-            case TagFormat.SEMVER_STRICT:
+            case VersionFormat.SEMVER_STRICT:
                 if not _STRICT_SEMVER_TEMPLATE.match(version):
                     return None
                 return _t.cast(Version, semver.Version.parse(version))
-            case TagFormat.PYTHON:
+            case VersionFormat.PYTHON:
                 return _t.cast(Version, packaging.version.Version(version))
-            case TagFormat.PYTHON_STRICT:
+            case VersionFormat.PYTHON_STRICT:
                 if not _STRICT_PYTHON_TEMPLATE.match(version):
                     return None
                 return _t.cast(Version, packaging.version.Version(version))
-            case TagFormat.PYTHON_SEMVER:
+            case VersionFormat.PYTHON_SEMVER:
                 if not _PYTHON_SEMVER_TEMPLATE.match(version):
                     return None
                 return _t.cast(Version, packaging.version.Version(version))
-            case TagFormat.NONE:
+            case VersionFormat.NONE:
                 return None
     except ValueError:
         return None
@@ -446,19 +446,19 @@ def canonize_version(version: Version | None, config: Config) -> str | None:
     if version is None:
         return None
     match config.version_format:
-        case TagFormat.SEMVER:
+        case VersionFormat.SEMVER:
             assert isinstance(version, semver.Version)
             return str(version)
-        case TagFormat.SEMVER_STRICT:
+        case VersionFormat.SEMVER_STRICT:
             assert isinstance(version, semver.Version)
             return str(version)
-        case TagFormat.PYTHON:
+        case VersionFormat.PYTHON:
             assert isinstance(version, packaging.version.Version)
             return str(version)
-        case TagFormat.PYTHON_STRICT:
+        case VersionFormat.PYTHON_STRICT:
             assert isinstance(version, packaging.version.Version)
             return str(version)
-        case TagFormat.PYTHON_SEMVER:
+        case VersionFormat.PYTHON_SEMVER:
             assert isinstance(version, packaging.version.Version)
 
             parts = []
@@ -506,5 +506,5 @@ def canonize_version(version: Version | None, config: Config) -> str | None:
             assert version.local is None
 
             return "".join(parts)
-        case TagFormat.NONE:
+        case VersionFormat.NONE:
             return None

@@ -3,9 +3,9 @@ from __future__ import annotations
 import re
 import typing as _t
 
-from changelog_keeper.context import Context, IssueCode, IssueScope
-from changelog_keeper.fix import make_link_for_section
-from changelog_keeper.model import (
+from ch_keeper.context import Context, IssueCode, IssueScope
+from ch_keeper.fix import make_link_for_section
+from ch_keeper.model import (
     Changelog,
     ReleaseSection,
     RepoVersion,

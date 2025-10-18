@@ -4,10 +4,15 @@ import pathlib
 import giturlparse
 import yuio.git
 
-from changelog_keeper.config import IssueCode, LinkTemplates, ReleaseLinkPreset
-from changelog_keeper.context import Context, IssueScope
-from changelog_keeper.model import RepoVersion
-from changelog_keeper.parse import canonize_version, parse_version
+from ch_keeper.config import (
+    IssueCode,
+    LinkTemplates,
+    ReleaseLinkPreset,
+    VersionFormat,
+)
+from ch_keeper.context import Context, IssueScope
+from ch_keeper.model import RepoVersion
+from ch_keeper.parse import canonize_version, parse_version
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +63,10 @@ def get_repo_versions(root: pathlib.Path, ctx: Context) -> dict[str, RepoVersion
             if tag.startswith(ctx.config.tag_prefix):
                 version = tag[len(ctx.config.tag_prefix) :]
                 parsed_version = parse_version(version, ctx.config)
-                if parsed_version is None:
+                if (
+                    parsed_version is None
+                    and ctx.config.version_format is not VersionFormat.NONE
+                ):
                     ctx.issue(
                         IssueCode.INVALID_TAG,
                         "Tag %s doesn't doesn't follow %s specification",

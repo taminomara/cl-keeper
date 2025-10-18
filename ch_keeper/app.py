@@ -18,43 +18,39 @@ import yuio.git
 import yuio.io
 import yuio.parse
 import yuio.theme
-from markdown_it.token import Token
 from markdown_it.tree import SyntaxTreeNode
 
-from changelog_keeper._version import __version__
-from changelog_keeper.check import check as _check
-from changelog_keeper.config import (
+from ch_keeper._version import __version__
+from ch_keeper.check import check as _check
+from ch_keeper.config import (
     PYTHON_PRESET,
     Config,
     GlobalConfig,
     LinkTemplates,
-    TagFormat,
+    VersionFormat,
 )
-from changelog_keeper.context import Context, IssueCode, IssueScope
-from changelog_keeper.fix import fix as _fix
-from changelog_keeper.model import (
+from ch_keeper.context import Context, IssueCode, IssueScope
+from ch_keeper.fix import fix as _fix
+from ch_keeper.model import (
     Changelog,
     ReleaseSection,
     RepoVersion,
     Section,
     SubSection,
     SubSectionCategoryKind,
-    SubSectionType,
     UnreleasedSection,
     Version,
 )
-from changelog_keeper.parse import canonize_version as _canonize_version
-from changelog_keeper.parse import (
-    detect_subsection_metadata as _detect_subsection_metadata,
-)
-from changelog_keeper.parse import parse as _parse
-from changelog_keeper.parse import parse_version as _parse_version
-from changelog_keeper.parse import split_into_sections as _split_into_sections
-from changelog_keeper.render import print_diff as _print_diff
-from changelog_keeper.render import render as _render
-from changelog_keeper.sort import merge_sections as _merge_sections
-from changelog_keeper.vcs import detect_origin as _detect_origin
-from changelog_keeper.vcs import get_repo_versions
+from ch_keeper.parse import canonize_version as _canonize_version
+from ch_keeper.parse import detect_subsection_metadata as _detect_subsection_metadata
+from ch_keeper.parse import parse as _parse
+from ch_keeper.parse import parse_version as _parse_version
+from ch_keeper.parse import split_into_sections as _split_into_sections
+from ch_keeper.render import print_diff as _print_diff
+from ch_keeper.render import render as _render
+from ch_keeper.sort import merge_sections as _merge_sections
+from ch_keeper.vcs import detect_origin as _detect_origin
+from ch_keeper.vcs import get_repo_versions
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +58,7 @@ logger = logging.getLogger(__name__)
 _GLOBAL_OPTIONS: GlobalConfig = GlobalConfig()
 
 _TRAILER_RE = re.compile(
-    r"^\s*(?:\[(?P<group>[^]]*+)\])?\s*(?P<message>.*)$", re.MULTILINE
+    r"^\s*(?:\[(?P<group>[^]]*+)\])?\s*(?P<message>.*)$", re.MULTILINE | re.DOTALL
 )
 _COMMENT_RE = re.compile(r"\<\!\-\-.*?(\-\-\>|\Z)", re.MULTILINE | re.DOTALL)
 
@@ -110,7 +106,7 @@ main.epilog = """
   chk <subcommand> --help
   ```
 
-- online documentation: https://changelog-keeper.readthedocs.io/.
+- online documentation: https://ch-keeper.readthedocs.io/.
   Alternatively, check out
 
   ```sh
@@ -201,205 +197,6 @@ def fix(
 
     if dry_run:
         _print_diff(original, result, file)
-
-
-@main.subcommand
-def gen(
-    #: produce result even if errors are detected
-    ignore_errors: bool = False,
-    #: don't save changes, print the diff instead
-    dry_run: bool = False,
-    #: start commit that will be included in the change log;
-    #: default is the latest release
-    start: yuio.git.Ref | str | None = yuio.app.field(
-        default=None, flags=["-f", "--from"]
-    ),
-    #: end commit that will be included in the change log; default is `HEAD`
-    end: yuio.git.Ref | str | None = yuio.app.field(default=None, flags=["-t", "--to"]),
-    #: open generated changes for editing
-    edit: bool = False,
-):
-    """
-    generate changelog from git log.
-
-    this command will inspect git repository even if `check_repo_tags` is `false`.
-
-    """
-
-    config = _load_config()
-    file = _locate_changelog(config)
-    original = file.read_text()
-
-    ctx = Context(
-        file,
-        original,
-        config,
-        _GLOBAL_OPTIONS.strict,
-        _make_link_templates(file.parent, config),
-    )
-
-    repo_versions = get_repo_versions(file.parent, ctx)
-
-    changelog = _parse(ctx)
-
-    if end is None:
-        end = yuio.git.Ref("HEAD")
-    if start is None:
-        _, start, _ = _find_latest_version(changelog, repo_versions, config)
-        if start:
-            start = f"{config.tag_prefix}{start}"
-
-    repo = yuio.git.Repo(file.parent)
-
-    if start and not repo.show(start):
-        raise yuio.app.AppError("Failed to check git log: unknown ref `%s`", start)
-    if end and not repo.show(end):
-        raise yuio.app.AppError("Failed to check git log: unknown ref `%s`", end)
-
-    if start:
-        ref = f"{start}..{end}"
-    else:
-        ref = end
-
-    _check(changelog, ctx, repo_versions)
-
-    if ctx.has_errors():
-        ctx.report()
-    if not ignore_errors:
-        ctx.exit_if_has_errors()
-
-    groups: dict[str, list[str]] = {}
-    n_messages = 0
-
-    for trailer in repo.trailers(ref, max_entries=None):
-        for key, value in trailer.trailers:
-            if key.casefold() != "changelog":
-                continue
-            if not (match := _TRAILER_RE.match(value)):
-                continue
-            group = (match.group("group") or "").strip()
-            message = (match.group("message") or "").strip()
-            if not message:
-                continue
-            for (
-                group_regex,
-                group_candidate,
-            ) in config.full_change_categories_map.items():
-                if re.search(group_regex, group or message):
-                    group = group_candidate
-                    break
-            groups.setdefault(group, []).append(message)
-            n_messages += 1
-
-    if not groups:
-        raise yuio.app.AppError("No changelog messages detected in range `%s`", ref)
-
-    new_section = None
-    to_remove = set()
-    for i, section, _ in _find_sections(FindMode.UNRELEASED, changelog, config):
-        to_remove.add(i)
-        if new_section is None:
-            new_section = section
-        else:
-            _merge_sections(new_section, section)
-
-    changelog.sections = [
-        section for i, section in enumerate(changelog.sections) if i not in to_remove
-    ]
-
-    if new_section is None:
-        new_section = UnreleasedSection(
-            heading=None, subsections=[], version_link=None, version_label=None
-        )
-
-    additional_section = UnreleasedSection(
-        heading=None, subsections=[], version_link=None, version_label=None
-    )
-    for name, messages in groups.items():
-        subsection = SubSection(type=SubSectionType.CHANGES, category=name)
-        items = []
-        items.append(Token("bullet_list_open", "ul", 1, markup="-", block=True))
-        for message in messages:
-            items.append(Token("list_item_open", "li", 1, markup="-", block=True))
-            items.extend(changelog.parser.parse(message, changelog.parser_env))
-            items.append(Token("list_item_close", "li", -1, markup="-", block=True))
-        items.append(Token("bullet_list_close", "ul", -1, markup="-", block=True))
-        subsection.content = SyntaxTreeNode(items).children
-        additional_section.subsections.append(subsection)
-    _merge_sections(new_section, additional_section)
-
-    yuio.io.info(
-        "Extracted `%s` changelog message%s in range `%s`",
-        n_messages,
-        "" if n_messages == 1 else "s",
-        ref,
-    )
-
-    if edit:
-        _edit_section(changelog, ctx, new_section)
-
-    changelog.sections.append(new_section)
-
-    _fix(changelog, ctx, repo_versions)
-
-    result = _render(changelog, ctx)
-
-    if not dry_run:
-        yuio.io.success("Changelog successfully updated")
-        file.write_text(result)
-    else:
-        _print_diff(original, result, file)
-
-    ctx.exit_if_has_errors()
-
-
-gen.epilog = """
-# examples:
-
-## generate changelog
-
-```sh
-chk gen
-```
-
-## generate changelog for specific range
-
-```sh
-chk gen -f v1.0.0 -t v1.1.0
-```
-
-## generate changelog and open for edit
-
-```sh
-chk gen --edit
-```
-
-# how changes are extracted from commits:
-
-this command inspect commit messages for trailers with key `changelog`. If commit
-message contains line `"changelog: ..."` at the end, it will be added to the log.
-
-For example, if a commit message looks like this:
-
-```
-commit message ...
-changelog: Added some new feature.
-```
-
-then an entry "Added some new feature" will be created.
-
-Each changelog entry will be matched against `change_categories_map` to determine
-an appropriate section for it. You can also specify section manually by enclosing it
-in square brackets and adding to the front of the change text:
-
-```
-commit message ...
-changelog: [added] Implemented new feature.
-```
-
-Changelog entries might span multiple lines, but they should be indented:
-
-"""
 
 
 class BumpMode(enum.Enum):
@@ -501,7 +298,7 @@ def bump(
             repo_versions = get_repo_versions(file.parent, ctx)
 
     parsed_version = _parse_version(version, ctx.config)
-    if parsed_version is None:
+    if parsed_version is None and config.version_format is not VersionFormat.NONE:
         ctx.issue(
             IssueCode.INVALID_VERSION,
             "New version `%s` doesn't follow %s specification",
@@ -675,6 +472,30 @@ def find(
         else:
             _merge_sections(found, section)
 
+    if found is None and isinstance(version, str):
+        parsed_version = _parse_version(version, config)
+        canonized_version = _canonize_version(parsed_version, config) or version
+
+        lower_bound = ctx.config.parsed_ignore_missing_releases_before
+        regex_bound = ctx.config.ignore_missing_releases_regexp
+
+        if (repo_versions is None or canonized_version in repo_versions) and (
+            (lower_bound and parsed_version and parsed_version < lower_bound)
+            or (regex_bound is not None and re.search(regex_bound, version))
+        ):
+            found = ReleaseSection(
+                heading=None,
+                subsections=[],
+                version=version,
+                parsed_version=parsed_version,
+                canonized_version=canonized_version,
+                version_link=None,
+                version_label=None,
+                release_date=None,
+                release_date_fmt=None,
+                release_comment=None,
+            )
+
     if found is not None:
         tokens = found.to_tokens(include_heading=False)
         if format_json:
@@ -717,6 +538,12 @@ def find(
             print(_render(changelog, ctx, tokens, disable_wrapping=True), end="")
     else:
         raise yuio.app.AppError("Can't find changelog entry for version `%s`", version)
+
+
+find.usage = """
+%(prog)s [<options>] [--ignore-errors] [--json] <version>
+%(prog)s [<options>] [--ignore-errors] [--json] {latest|unreleased}
+"""
 
 
 find.epilog = """
@@ -804,7 +631,7 @@ def check_tag(
     """
     check if a git tag conforms to the versioning specification.
 
-    This command is handy to use in release CI or in a pre-push git hook to verify
+    this command is handy to use in release CI or in a pre-push git hook to verify
     that all tags conform to the selected versioning specification.
 
     """
@@ -826,18 +653,6 @@ def check_tag(
         raise yuio.app.AppError("Tag verification failed")
     else:
         yuio.io.success("Tag `%s` is valid", tag)
-
-
-check_tag.epilog = """
-# examples:
-
-check if tag is valid:
-
-```sh
-chk check-tag v1.0.0-rc2
-```
-
-"""
 
 
 @main.subcommand(help=yuio.DISABLED)
@@ -917,7 +732,6 @@ def _load_config() -> Config:
                 break
             root = next_root
         if _GLOBAL_OPTIONS.config_path is None:
-            config.update(_GLOBAL_OPTIONS)  # type: ignore
             logger.info("using default config")
             logger.debug("config = %r", config)
             return config
@@ -939,7 +753,6 @@ def _load_config() -> Config:
         try:
             data = tomllib.loads(_GLOBAL_OPTIONS.config_path.read_text())
         except tomllib.TOMLDecodeError as e:
-            config.update(_GLOBAL_OPTIONS)  # type: ignore
             yuio.io.warning(
                 "Failed to parse config file <c path>%s</c>: %s",
                 _GLOBAL_OPTIONS.config_path,
@@ -948,13 +761,12 @@ def _load_config() -> Config:
             logger.debug("config = %r", config)
             return config
         try:
-            data = data["tool"]["changelog_keeper"]
+            data = data["tool"]["ch_keeper"]
         except KeyError as e:
             logger.debug(
-                "%s doesn't have section tool.changelog_keeper",
+                "%s doesn't have section tool.ch_keeper",
                 _GLOBAL_OPTIONS.config_path,
             )
-            config.update(_GLOBAL_OPTIONS)  # type: ignore
             logger.info("using config from %s", _GLOBAL_OPTIONS.config_path)
             logger.debug("config = %r", config)
             return config
@@ -973,7 +785,6 @@ def _load_config() -> Config:
             _GLOBAL_OPTIONS.config_path,
         )
 
-    config.update(_GLOBAL_OPTIONS)  # type: ignore
     logger.info("using config from %s", _GLOBAL_OPTIONS.config_path)
     logger.debug("config = %r", config)
     return config
@@ -1137,7 +948,7 @@ def _find_latest_version(
 def _report_latest_version_fail(
     what: str, version: str | None, map: tuple[int, int] | None, config: Config
 ) -> _t.Never:
-    if config.version_format is TagFormat.NONE:
+    if config.version_format is VersionFormat.NONE:
         reason = "`version_format` is set to `none`"
         args = ()
     else:

@@ -1,8 +1,8 @@
 from markdown_it.token import Token
 from markdown_it.tree import SyntaxTreeNode
 
-from changelog_keeper.context import Context
-from changelog_keeper.model import (
+from ch_keeper.context import Context
+from ch_keeper.model import (
     Changelog,
     ReleaseSection,
     RepoVersion,
@@ -12,7 +12,7 @@ from changelog_keeper.model import (
     SubSectionType,
     UnreleasedSection,
 )
-from changelog_keeper.sort import sorted_sections, sorted_subsections
+from ch_keeper.sort import sorted_sections, sorted_subsections
 
 
 def fix(
@@ -73,20 +73,20 @@ def fix(
             if subsection.category_kind is SubSectionCategoryKind.KNOWN and (
                 heading := ctx.config.full_change_categories[subsection.category]
             ):
-                subsection.heading = format_heading(heading)
+                subsection.heading = format_heading(heading, 3)
 
 
-def format_heading(text: str):
+def format_heading(text: str, level: int = 1):
     return SyntaxTreeNode(
         [
-            Token("heading_open", "h1", 1, block=True, markup="#"),
+            Token("heading_open", f"h{level}", 1, block=True, markup="#" * level),
             Token(
                 "inline",
                 "",
                 0,
                 children=[Token("text", "", 0, content=text)],
             ),
-            Token("heading_close", "h1", -1, block=True),
+            Token("heading_close", f"h{level}", -1, block=True),
         ],
         create_root=False,
     )

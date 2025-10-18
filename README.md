@@ -1,3 +1,3 @@
-# Changelog-keeper
+# ch-keeper
 
 Work in progress...

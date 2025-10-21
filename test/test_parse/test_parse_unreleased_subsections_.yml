@@ -1,0 +1,25 @@
+messages:
+- code: UnknownChangeCategory
+  mag: Unknown change group `Unknown`
+  pos:
+  - 7
+  - 8
+  scope: 1
+  severity: 3
+sections:
+- subsections:
+  - category: added
+    category_kind: KNOWN
+    sort_key: 2
+    type: CHANGES
+  - category: removed
+    category_kind: KNOWN
+    sort_key: 5
+    type: CHANGES
+  - category: unknown
+    category_kind: UNKNOWN
+    sort_key: null
+    type: CHANGES
+  type: UNRELEASED
+  version_label: null
+  version_link: null

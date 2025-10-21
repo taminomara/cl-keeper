@@ -1,0 +1,19 @@
+messages:
+- code: InvalidReleaseDate
+  mag: 'Incorrect release date `2020-20-20`: month must be in 1..12'
+  pos:
+  - 0
+  - 1
+  scope: 1
+  severity: 4
+sections:
+- canonized_version: 1.0.0
+  parsed_version: 1.0.0
+  release_comment: ''
+  release_date: null
+  release_date_fmt: '2020-20-20'
+  subsections: []
+  type: RELEASE
+  version: 1.0.0
+  version_label: null
+  version_link: null

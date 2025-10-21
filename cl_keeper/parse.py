@@ -259,8 +259,10 @@ def create_section(
             )
             found_unresolved_link = True
 
-        if middle.endswith("("):
-            suffix = suffix.removeprefix(")")
+        if middle.endswith(("(", "[", "<", "{")) and suffix.startswith(
+            (")", "]", ">", "}")
+        ):
+            suffix = suffix[1:]
     else:
         prefix = heading_text[: date_match.start()]
         middle = heading_text[date_match.end() : version_match.start()]
@@ -278,8 +280,10 @@ def create_section(
             suffix = suffix.lstrip().removeprefix("]")
             found_unresolved_link = True
 
-        if middle.endswith("("):
-            suffix = suffix.removeprefix(")")
+        if middle.endswith(("(", "[", "<", "{")) and suffix.startswith(
+            (")", "]", ">", "}")
+        ):
+            suffix = suffix[1:]
 
     release_comment = (
         suffix.removeprefix(ctx.config.release_comment_decorations[0])
@@ -340,7 +344,7 @@ def detect_subsection_metadata(subsection: SubSection, ctx: Context):
             subsection.category = category
             subsection.sort_key = ctx.config.change_categories_sort_keys.get(category)
 
-            canonical_heading = ctx.config.change_categories.get(category)
+            canonical_heading = ctx.config.full_change_categories.get(category)
             if canonical_heading and canonical_heading != heading:
                 ctx.issue(
                     IssueCode.CHANGE_CATEGORY_HEADING_FORMAT,

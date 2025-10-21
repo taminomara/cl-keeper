@@ -3,9 +3,6 @@ Usage
 
 .. currentmodule:: cl_keeper.config
 
-.. role:: flag
-    :class: flag
-
 Changelog Keeper's command is called  :program:`chk`. It comes with four main subcommands:
 
 **chk check**

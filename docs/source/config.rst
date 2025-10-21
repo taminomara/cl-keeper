@@ -36,6 +36,8 @@ Full list of config keys
 .. autoconfig:: Config
     :members:
     :display-name: .changelog.yaml
+    :show-flags:
+    :flag-prefix: cfg
 
 
 Link presets

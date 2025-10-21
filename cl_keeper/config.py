@@ -270,9 +270,12 @@ class LinkTemplates:
         self.update_vars(rhs.vars)
         return self
 
-    def update_vars(self, vars: dict[str, str]):
-        for k, v in vars.items():
-            self.vars.setdefault(k, v)
+    def update_vars(self, vars: dict[str, str], override: bool = False):
+        if override:
+            self.vars.update(vars)
+        else:
+            for k, v in vars.items():
+                self.vars.setdefault(k, v)
         return self
 
 
@@ -482,6 +485,7 @@ class Config(yuio.config.Config):
     file: pathlib.Path = yuio.config.field(
         default=pathlib.Path("CHANGELOG.md"),
         parser=yuio.parse.ExistingPath(),
+        flags=yuio.DISABLED,
     )
     """
     Path to the changelog file, relative to this config location.
@@ -491,7 +495,10 @@ class Config(yuio.config.Config):
     format_wrapping: (
         _t.Annotated[int, yuio.parse.Gt(0)]
         | _t.Annotated[Wrapping, yuio.parse.Enum(doc_inline=True)]
-    ) = 90
+    ) = yuio.config.field(
+        default=90,
+        help="max line width for wrapping markdown files",
+    )
     """
     Max line width for wrapping markdown files.
 
@@ -501,16 +508,19 @@ class Config(yuio.config.Config):
 
     """
 
-    change_categories: dict[str, str] = {
-        "security": "Security",
-        "breaking": "Breaking",
-        "added": "Added",
-        "changed": "Changed",
-        "deprecated": "Deprecated",
-        "removed": "Removed",
-        "performance": "Performance",
-        "fixed": "Fixed",
-    }
+    change_categories: dict[str, str] = yuio.config.field(
+        default={
+            "security": "Security",
+            "breaking": "Breaking",
+            "added": "Added",
+            "changed": "Changed",
+            "deprecated": "Deprecated",
+            "removed": "Removed",
+            "performance": "Performance",
+            "fixed": "Fixed",
+        },
+        help="ordering and titles for change categories",
+    )
     """
     Ordering and titles for change categories.
 
@@ -555,6 +565,10 @@ class Config(yuio.config.Config):
     extra_change_categories: dict[str, str] = yuio.app.field(
         default={},
         merge=lambda l, r: {**l, **r},
+        help=(
+            "additional items that will be added to `--cfg-change-categories` "
+            "without completely overriding it"
+        ),
     )
     """
     Additional items that will be added to :attr:`~Config.change_categories`
@@ -562,12 +576,18 @@ class Config(yuio.config.Config):
 
     """
 
-    bump_patch_categories: set[str] = {
-        "security",
-        "deprecated",
-        "performance",
-        "fixed",
-    }
+    bump_patch_categories: set[str] = yuio.app.field(
+        default={
+            "security",
+            "deprecated",
+            "performance",
+            "fixed",
+        },
+        help=(
+            "if these change categories appear in unreleased section, "
+            "suggest bumping the patch version component."
+        ),
+    )
     """
     If these change categories appear in unreleased section, suggest bumping
     the patch version component.
@@ -579,7 +599,12 @@ class Config(yuio.config.Config):
     """
 
     extra_bump_patch_categories: set[str] = yuio.app.field(
-        default=set(), merge=lambda l, r: l | r
+        default=set(),
+        merge=lambda l, r: l | r,
+        help=(
+            "additional items that will be added to `--cfg-bump-patch-categories` "
+            "without completely overriding it"
+        ),
     )
     """
     Additional items that will be added to :attr:`~Config.bump_patch_categories`
@@ -587,11 +612,17 @@ class Config(yuio.config.Config):
 
     """
 
-    bump_minor_categories: set[str] = {
-        "added",
-        "changed",
-        "removed",
-    }
+    bump_minor_categories: set[str] = yuio.app.field(
+        default={
+            "added",
+            "changed",
+            "removed",
+        },
+        help=(
+            "if these change categories appear in unreleased section, "
+            "suggest bumping the minor version component."
+        ),
+    )
     """
     If these change categories appear in unreleased section, suggest bumping
     the minor version component.
@@ -603,7 +634,12 @@ class Config(yuio.config.Config):
     """
 
     extra_bump_minor_categories: set[str] = yuio.app.field(
-        default=set(), merge=lambda l, r: l | r
+        default=set(),
+        merge=lambda l, r: l | r,
+        help=(
+            "additional items that will be added to `--cfg-bump-minor-categories` "
+            "without completely overriding it"
+        ),
     )
     """
     Additional items that will be added to :attr:`~Config.bump_minor_categories`
@@ -611,9 +647,15 @@ class Config(yuio.config.Config):
 
     """
 
-    bump_major_categories: set[str] = {
-        "breaking",
-    }
+    bump_major_categories: set[str] = yuio.app.field(
+        default={
+            "breaking",
+        },
+        help=(
+            "if these change categories appear in unreleased section, "
+            "suggest bumping the major version component."
+        ),
+    )
     """
     If these change categories appear in unreleased section, suggest bumping
     the major version component.
@@ -625,7 +667,12 @@ class Config(yuio.config.Config):
     """
 
     extra_bump_major_categories: set[str] = yuio.app.field(
-        default=set(), merge=lambda l, r: l | r
+        default=set(),
+        merge=lambda l, r: l | r,
+        help=(
+            "additional items that will be added to `--cfg-bump-major-categories` "
+            "without completely overriding it"
+        ),
     )
     """
     Additional items that will be added to :attr:`~Config.bump_major_categories`
@@ -633,16 +680,22 @@ class Config(yuio.config.Config):
 
     """
 
-    change_categories_map: dict[str, str] = {
-        r"(?im)^\s*(\[\s*)?Security(\b)": "security",
-        r"(?im)^\s*(\[\s*)?Break(ing|s)?(\b)": "breaking",
-        r"(?im)^\s*(\[\s*)?Add(ed|s)?(\b)": "added",
-        r"(?im)^\s*(\[\s*)?Change(d|s)?(\b)": "changed",
-        r"(?im)^\s*(\[\s*)?Deprecate(d|s)?(\b)": "deprecated",
-        r"(?im)^\s*(\[\s*)?Remove(d|s)?(\b)": "removed",
-        r"(?im)^\s*(\[\s*)?Performance(\b)": "performance",
-        r"(?im)^\s*(\[\s*)?Fix(ed|es)?(\b)": "fixed",
-    }
+    change_categories_map: dict[str, str] = yuio.app.field(
+        default={
+            r"(?im)\bsecurity\b": "security",
+            r"(?im)\bbreak(ing|s)?\b": "breaking",
+            r"(?im)\badd(ed|s)?\b": "added",
+            r"(?im)\bchange(d|s)?\b": "changed",
+            r"(?im)\bdeprecate(d|s)?\b": "deprecated",
+            r"(?im)\bremove(d|s)?\b": "removed",
+            r"(?im)\bperformance\b": "performance",
+            r"(?im)\bfix(ed|es)?\b": "fixed",
+        },
+        help=(
+            "a mapping from regular expressions to change category names, "
+            "used to parse and normalize categories"
+        ),
+    )
     r"""
     A mapping from regular expressions to change category names, used to parse
     and normalize categories.
@@ -664,6 +717,10 @@ class Config(yuio.config.Config):
     extra_change_categories_map: dict[str, str] = yuio.app.field(
         default={},
         merge=lambda l, r: {**l, **r},
+        help=(
+            "additional items that will be added to `--cfg-change-categories-map` "
+            "without completely overriding it"
+        ),
     )
     """
     Additional items that will be added to :attr:`~Config.change_categories_map`
@@ -671,13 +728,19 @@ class Config(yuio.config.Config):
 
     """
 
-    unreleased_name: str = "Unreleased"
+    unreleased_name: str = yuio.app.field(
+        default="Unreleased",
+        help="title for the `unreleased` section of the changelog",
+    )
     """
     Title for the ``unreleased`` section of the changelog.
 
     """
 
-    unreleased_decorations: tuple[str, str] = ("", "")
+    unreleased_decorations: tuple[str, str] = yuio.app.field(
+        default=("", ""),
+        help="symbols that will be added around unreleased heading",
+    )
     """
     Symbols that will be added around :attr:`~Config.unreleased_name`, but won't
     be turned into a link.
@@ -687,49 +750,75 @@ class Config(yuio.config.Config):
 
     """
 
-    unreleased_pattern: str = r"(?i)unreleased"
+    unreleased_pattern: str = yuio.app.field(
+        default=r"(?i)unreleased",
+        help="regular expression used to detect sections with unreleased changes",
+    )
     """
     Regular expression used to detect sections with unreleased changes.
 
     """
 
-    release_decorations: tuple[str, str] = ("", "")
+    release_decorations: tuple[str, str] = yuio.app.field(
+        default=("", ""),
+        help="symbols that will be added around each release heading",
+    )
     """
     Symbols that will be added around each release heading.
 
     """
 
-    release_date_decorations: tuple[str, str] = (" - ", "")
+    release_date_decorations: tuple[str, str] = yuio.app.field(
+        default=(" - ", ""),
+        help="symbols that will be added around release date",
+    )
     """
     Symbols that will be added around release date.
 
     """
 
-    version_decorations: tuple[str, str] = ("", "")
+    version_decorations: tuple[str, str] = yuio.app.field(
+        default=("", ""),
+        help="symbols that will be added around release version",
+    )
     """
     Symbols that will be added around release version.
 
     """
 
-    release_comment_decorations: tuple[str, str] = (" - ", "")
+    release_comment_decorations: tuple[str, str] = yuio.app.field(
+        default=(" - ", ""),
+        help="symbols that will be added around release comments",
+    )
     """
     Symbols that will be added around release comments.
 
     """
 
-    add_release_date: bool = True
+    add_release_date: bool = yuio.app.field(
+        default=True,
+        help="whether changelog entries should have a release date in their headings",
+    )
     """
     Whether changelog entries should have a release date in their headings.
 
     """
 
-    add_release_link: bool = True
+    add_release_link: bool = yuio.app.field(
+        default=True,
+        help=(
+            "whether changelog entries should have links to tags/diffs in their headings"
+        ),
+    )
     """
     Whether changelog entries should have links to tags/diffs in their headings.
 
     """
 
-    release_link_preset: ReleaseLinkPreset | None = None
+    release_link_preset: ReleaseLinkPreset | None = yuio.app.field(
+        default=None,
+        help="preset for release link templates",
+    )
     """
     Preset for release link templates.
 
@@ -738,7 +827,13 @@ class Config(yuio.config.Config):
 
     """
 
-    release_link_template: str | None = None
+    release_link_template: str | None = yuio.app.field(
+        default=None,
+        help=(
+            "template for a release link, "
+            "formatted using Python's `str.format` method"
+        ),
+    )
     """
     Template for a release link, formatted using Python's :meth:`str.format` method.
     This setting overrides link from :attr:`preset <Config.release_link_preset>`.
@@ -763,7 +858,13 @@ class Config(yuio.config.Config):
 
     """
 
-    release_link_template_last: str | None = None
+    release_link_template_last: str | None = yuio.app.field(
+        default=None,
+        help=(
+            "template for a link for an unreleased entry, "
+            "formatted using Python's `str.format` method"
+        ),
+    )
     """
     Template for a link for an unreleased entry, formatted using
     Python's :meth:`str.format` method. This setting overrides link from
@@ -786,7 +887,13 @@ class Config(yuio.config.Config):
 
     """
 
-    release_link_template_first: str | None = None
+    release_link_template_first: str | None = yuio.app.field(
+        default=None,
+        help=(
+            "template for a link for the first release, "
+            "formatted using Python's `str.format` method"
+        ),
+    )
     """
     Template for a link for the first release, formatted using
     Python's :meth:`str.format` method. This setting overrides link from
@@ -809,13 +916,19 @@ class Config(yuio.config.Config):
 
     """
 
-    release_link_template_vars: dict[str, str] | None = None
+    release_link_template_vars: dict[str, str] | None = yuio.app.field(
+        default=None,
+        help=("additional variables that will be available in release link templates"),
+    )
     """
     Additional variables that will be available in release link templates.
 
     """
 
-    check_repo_tags: bool = True
+    check_repo_tags: bool = yuio.app.field(
+        default=True,
+        help="scan git repo and ensure that changelog doesn't miss any release",
+    )
     """
     Scan git repo and ensure that changelog doesn't miss any release.
 
@@ -823,7 +936,10 @@ class Config(yuio.config.Config):
 
     """
 
-    tag_prefix: str = "v"
+    tag_prefix: str = yuio.app.field(
+        default="v",
+        help="prefix for release tags",
+    )
     """
     Prefix for release tags.
 
@@ -833,7 +949,10 @@ class Config(yuio.config.Config):
 
     """
 
-    version_format: VersionFormat = VersionFormat.SEMVER
+    version_format: VersionFormat = yuio.app.field(
+        default=VersionFormat.SEMVER,
+        help="versioning schema used to parse and sort tags and versions",
+    )
     """
     Versioning schema used to parse and sort tags and versions.
 
@@ -841,13 +960,19 @@ class Config(yuio.config.Config):
 
     """
 
-    ignore_missing_releases_before: str | None = None
+    ignore_missing_releases_before: str | None = yuio.app.field(
+        default=None,
+        help="don't complain about missing releases for tags before this one",
+    )
     """
     Don't complain about missing releases for tags before this one.
 
     """
 
-    ignore_missing_releases_regexp: str | None = r"(?i)dev|b|beta|a|alpha|rc|post"
+    ignore_missing_releases_regexp: str | None = yuio.app.field(
+        default=r"(?i)dev|b|beta|a|alpha|rc|post",
+        help="don't complain about missing releases if version matches this regexp",
+    )
     """
     Don't complain about missing releases if version matches this regexp.
 
@@ -857,11 +982,16 @@ class Config(yuio.config.Config):
     """
 
     severity: dict[
-        IssueCode,
-        _t.Annotated[IssueSeverity, yuio.parse.Enum(by_name=True, to_dash_case=True)],
+        _t.Annotated[IssueCode, yuio.parse.WithDesc("<code>")],
+        _t.Annotated[
+            IssueSeverity,
+            yuio.parse.Enum(by_name=True, to_dash_case=True),
+            yuio.parse.WithDesc("<severity>"),
+        ],
     ] = yuio.config.field(
         default={},
         merge=lambda l, r: {**l, **r},
+        help="mapping from issue code to issue severity",
     )
     """
     A mapping from issue code to issue severity. Allows customizing and disabling

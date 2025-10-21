@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 def detect_origin(root: pathlib.Path) -> LinkTemplates | None:
     try:
         url = yuio.git.Repo(root).git("ls-remote", "--get-url").decode().strip()
-    except (yuio.git.GitException, UnicodeDecodeError) as e:
+    except (yuio.git.GitError, UnicodeDecodeError) as e:
         logger.debug("failed to get origin url from git: %s", e)
         return None
     parsed = giturlparse.parse(url)
@@ -39,14 +39,14 @@ def detect_origin(root: pathlib.Path) -> LinkTemplates | None:
                 vars["host"],
                 vars["repo"],
             )
-            return ReleaseLinkPreset.GITHUB.get_links().update_vars(vars)
+            return ReleaseLinkPreset.GITHUB.get_links().update_vars(vars, override=True)
         case "gitlab":
             logger.info(
                 "using link preset 'gitlab' with host %r, repo %r",
                 vars["host"],
                 vars["repo"],
             )
-            return ReleaseLinkPreset.GITLAB.get_links().update_vars(vars)
+            return ReleaseLinkPreset.GITLAB.get_links().update_vars(vars, override=True)
         case _:
             logger.info(
                 "failed to parse origin url from git: platform %r is not supported",
@@ -69,7 +69,7 @@ def get_repo_versions(root: pathlib.Path, ctx: Context) -> dict[str, RepoVersion
                 ):
                     ctx.issue(
                         IssueCode.INVALID_TAG,
-                        "Tag %s doesn't doesn't follow %s specification",
+                        "Tag `%s` doesn't follow %s specification",
                         tag,
                         ctx.config.version_format.value,
                         scope=IssueScope.EXTERNAL,

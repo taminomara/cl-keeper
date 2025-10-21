@@ -3,9 +3,6 @@ Advanced usage
 
 .. currentmodule:: cl_keeper.config
 
-.. role:: flag
-    :class: flag
-
 .. _pre-commit-usage:
 
 Using Changelog Keeper in pre-commit hooks
@@ -44,7 +41,7 @@ Using Changelog Keeper in GitHub Actions
 
 Changelog Keeper provides a GitHub action to extract release notes for the given tag.
 
-Here's an example of using ``taminomara/cl-keeper@v1`` in conjunction with
+Here's an example of using ``taminomara/cl-keeper@v1`` in combination with
 ``softprops/action-gh-release@v2`` to create a GitHub release on tag push:
 
 .. code-block:: yaml
@@ -108,6 +105,9 @@ Here's an example of using ``taminomara/cl-keeper@v1`` in conjunction with
     :widths: 20 10 70
     :name: gh-action-outputs
 
+    * - Output
+      - Type
+      - Description
     * - ``text``
       - ``string``
       - Extracted markdown text.

@@ -1,0 +1,46 @@
+messages: []
+sections:
+- subsections:
+  - category: ''
+    category_kind: UNKNOWN
+    sort_key: null
+    type: TRIVIA
+  type: TRIVIA
+- subsections: []
+  type: UNRELEASED
+  version_label: UNRELEASED
+  version_link: https://example.com/unreleased
+- canonized_version: 1.0.0
+  parsed_version: 1.0.0
+  release_comment: ''
+  release_date: '2020-01-01'
+  release_date_fmt: '2020-01-01'
+  subsections:
+  - category: added
+    category_kind: KNOWN
+    sort_key: 2
+    type: CHANGES
+  type: RELEASE
+  version: 1.0.0
+  version_label: 1.0.0
+  version_link: https://example.com/1.0.0
+- subsections:
+  - category: ''
+    category_kind: UNKNOWN
+    sort_key: null
+    type: TRIVIA
+  type: TRIVIA
+- canonized_version: 0.0.0-beta3
+  parsed_version: 0.0.0-beta3
+  release_comment: ''
+  release_date: null
+  release_date_fmt: null
+  subsections:
+  - category: ''
+    category_kind: UNKNOWN
+    sort_key: null
+    type: TRIVIA
+  type: RELEASE
+  version: 0.0.0-beta3
+  version_label: 0.0.0-BETA3
+  version_link: https://example.com/0.0.0-beta3

@@ -82,6 +82,8 @@ def main(
     ),
     #: increase severity of all messages by one level
     strict: bool = yuio.app.field(default=False, usage=yuio.OMIT),
+    #: config overrides
+    cfg: Config = yuio.app.field(usage=yuio.OMIT),
 ):
     _GLOBAL_OPTIONS.config_path = config_path
     _GLOBAL_OPTIONS.strict = strict
@@ -267,16 +269,9 @@ def bump(
             raise yuio.app.AppError("Can't bump changelog: revert is in progress")
         if not status.branch:
             raise yuio.app.AppError("Can't bump changelog: git head is detached")
-        changes = [
-            str(ch.path)
-            for ch in status.changes
-            if ch.tree != yuio.git.Modification.UNMODIFIED
-        ]
-        if changes:
+        if status.has_unstaged_changes():
             raise yuio.app.AppError(
-                "Repository has unstaged changes. Please, stage them or stash them.\n"
-                "Changed files:\n  <c path>%s</c>",
-                "\n  ".join(changes),
+                "Repository has unstaged changes; please, stage them or stash them"
             )
 
     ctx = Context(

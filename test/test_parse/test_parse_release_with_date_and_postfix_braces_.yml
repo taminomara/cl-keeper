@@ -1,0 +1,20 @@
+messages:
+- code: ReleaseHeadingFormat
+  mag: Heading for release `1.0.0` isn't properly formatted, should be `1.0.0 - 2020-01-01
+    - [YANKED]`
+  pos:
+  - 0
+  - 1
+  scope: 1
+  severity: 3
+sections:
+- canonized_version: 1.0.0
+  parsed_version: 1.0.0
+  release_comment: '[YANKED]'
+  release_date: '2020-01-01'
+  release_date_fmt: '2020-01-01'
+  subsections: []
+  type: RELEASE
+  version: 1.0.0
+  version_label: null
+  version_link: null

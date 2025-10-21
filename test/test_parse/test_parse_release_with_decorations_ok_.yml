@@ -1,0 +1,12 @@
+messages: []
+sections:
+- canonized_version: 1.0.0
+  parsed_version: 1.0.0
+  release_comment: ''
+  release_date: '2020-01-01'
+  release_date_fmt: '2020-01-01'
+  subsections: []
+  type: RELEASE
+  version: 1.0.0
+  version_label: null
+  version_link: null

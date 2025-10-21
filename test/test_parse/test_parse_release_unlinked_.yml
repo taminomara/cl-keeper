@@ -1,0 +1,19 @@
+messages:
+- code: ReleaseHeadingFormat
+  mag: Can't resolve version's link
+  pos:
+  - 0
+  - 1
+  scope: 1
+  severity: 3
+sections:
+- canonized_version: 1.0.0
+  parsed_version: 1.0.0
+  release_comment: ''
+  release_date: null
+  release_date_fmt: null
+  subsections: []
+  type: RELEASE
+  version: 1.0.0
+  version_label: null
+  version_link: null

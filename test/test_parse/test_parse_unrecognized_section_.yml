@@ -1,0 +1,15 @@
+messages:
+- code: GeneralFormattingError
+  mag: Changelog section doesn't contain a release version
+  pos:
+  - 0
+  - 1
+  scope: 1
+  severity: 3
+sections:
+- subsections:
+  - category: ''
+    category_kind: UNKNOWN
+    sort_key: null
+    type: TRIVIA
+  type: TRIVIA

@@ -1,0 +1,13 @@
+messages:
+- code: UnreleasedHeadingFormat
+  mag: Heading for unreleased changes isn't properly formatted, should be `Unreleased`
+  pos:
+  - 0
+  - 1
+  scope: 1
+  severity: 3
+sections:
+- subsections: []
+  type: UNRELEASED
+  version_label: null
+  version_link: null

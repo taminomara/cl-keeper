@@ -163,7 +163,7 @@ jobs:
           script-name: cl_keeper
           mode: onefile
           deployment: true
-          output-file: chk-${{ runner.os }}-${{ runner.arch }}${{ runner.os == windows-latest && '.exe' || '' }}
+          output-file: chk-${{ runner.os }}-${{ runner.arch }}${{ runner.os == 'windows-latest' && '.exe' || '' }}
       - name: Upload the build artifact
         uses: actions/upload-artifact@v4
         with:

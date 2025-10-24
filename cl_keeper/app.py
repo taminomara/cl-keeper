@@ -220,10 +220,10 @@ def bump(
     dry_run: bool = False,
     #: release version or tag that will be used for a new release
     version: (
-        _t.Annotated[BumpMode, yuio.parse.WithDesc("version component")]
-        | yuio.git.Tag
+        _t.Annotated[BumpMode, yuio.parse.WithMeta(desc="version component")]
         | str
         | None
+        | yuio.git.Tag
     ) = yuio.app.positional(default=None),
     #: create an alpha pre-release. If `version` is given, this will bump
     #: the corresponding component and make a pre-release. If `version` is not given,
@@ -269,10 +269,6 @@ def bump(
             raise yuio.app.AppError("Can't bump changelog: revert is in progress")
         if not status.branch:
             raise yuio.app.AppError("Can't bump changelog: git head is detached")
-        if status.has_unstaged_changes():
-            raise yuio.app.AppError(
-                "Repository has unstaged changes; please, stage them or stash them"
-            )
 
     ctx = Context(
         file,
@@ -381,29 +377,13 @@ def bump(
     tag = f"{config.tag_prefix}{version}"
     if commit and not dry_run:
         repo = yuio.git.Repo(file.parent)
-        status = repo.status()
+        repo.git("add", str(file))
+        repo.print_status()
         yuio.io.info(
-            "On branch `%s`, `%s` ahead, `%s` behind, ready to commit release `%s`, tag `%s`",
-            status.branch,
-            status.ahead,
-            status.behind,
-            version,
-            tag,
+            "You can take a look around and make any changes before proceeding.\n"
+            "Alternatively, you can cancel now and make a release commit later.\n"
         )
-        yuio.io.info("Current git status:")
-        for change in status.changes:
-            path = (
-                change.path
-                if change.path_from is None
-                else f"{change.path_from} -> {change.path}"
-            )
-            yuio.io.info(
-                "  <c path>%s</c>: `%s%s`", path, change.staged.value, change.tree.value
-            )
-        yuio.io.info(
-            "\nYou can take a look around and make any changes before proceeding.\n"
-        )
-        ok = yuio.io.ask[bool]("Proceed?", default=False)
+        ok = yuio.io.ask[bool]("Proceed with commit and tag?", default=False)
         message = f"Release {version}"
         if not ok:
             yuio.io.failure("Commit canceled")
@@ -412,17 +392,14 @@ def bump(
                 Use this command to commit changes:
 
                 ```sh
-                git add %s
                 git commit -m '%s'
                 git tag %s
                 ```
                 """,
-                file.relative_to(pathlib.Path.cwd(), walk_up=True),
                 message,
                 tag,
             )
             raise yuio.app.AppError()
-        repo.git("add", str(file))
         repo.git("commit", "-m", message)
         repo.git("tag", tag)
         status = repo.status()
@@ -511,7 +488,7 @@ def find(
     format_json: bool = yuio.app.field(default=False, flags="--json"),
     #: release version or tag, can also be `unreleased` or `latest`
     version: (
-        _t.Annotated[FindMode, yuio.parse.WithDesc("query")] | yuio.git.Tag | str
+        _t.Annotated[FindMode, yuio.parse.WithMeta(desc="query")] | str | yuio.git.Tag
     ) = yuio.app.positional(),
 ):
     """

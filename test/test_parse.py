@@ -1,13 +1,14 @@
 import pathlib
 import textwrap
+
 import pytest
 from packaging.version import Version as PyVersion
 from semver import Version as SemverVersion
 
 from cl_keeper.config import Config, VersionFormat
-from cl_keeper.model import Section, SubSection
-from cl_keeper.parse import canonize_version, parse_version, parse
 from cl_keeper.context import Context
+from cl_keeper.model import Section, SubSection
+from cl_keeper.parse import canonize_version, parse, parse_version
 
 
 @pytest.mark.parametrize(

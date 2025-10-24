@@ -982,11 +982,14 @@ class Config(yuio.config.Config):
     """
 
     severity: dict[
-        _t.Annotated[IssueCode, yuio.parse.WithDesc("<code>")],
+        _t.Annotated[
+            IssueCode,
+            yuio.parse.WithMeta(desc="<code>"),
+        ],
         _t.Annotated[
             IssueSeverity,
             yuio.parse.Enum(by_name=True, to_dash_case=True),
-            yuio.parse.WithDesc("<severity>"),
+            yuio.parse.WithMeta(desc="<severity>"),
         ],
     ] = yuio.config.field(
         default={},

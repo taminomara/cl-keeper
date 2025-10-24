@@ -77,8 +77,6 @@ def build_parser() -> MarkdownIt:
     parser.options["parser_extension"] = []
     parser.options["mdformat"] = {}
 
-    print(1)
-
     # Note: entrypoint discovery system doesn't work in standalone nuitka builds.
     # We load all plugins manually.
     plugins = [

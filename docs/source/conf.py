@@ -24,7 +24,7 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx.ext.githubpages",
     "sphinx_design",
-    "yuio._sphinx",
+    "yuio.ext.sphinx",
 ]
 
 intersphinx_mapping = {

@@ -61,8 +61,8 @@ Here's an example of using ``taminomara/cl-keeper@v1`` in combination with
         - name: Create GitHub release
           uses: softprops/action-gh-release@v2
           with:
-            prerelease: ${{ steps.changelog.outputs.is-pre-release }}
-            draft: ${{ steps.changelog.outputs.is-unreleased }}
+            prerelease: ${{ fromJSON(steps.changelog.outputs.is-pre-release) }}
+            draft: ${{ fromJSON(steps.changelog.outputs.is-unreleased) }}
             body: |
               ## Changelog
 
@@ -112,14 +112,20 @@ Here's an example of using ``taminomara/cl-keeper@v1`` in combination with
       - ``string``
       - Extracted markdown text.
     * - ``is-latest``
-      - ``boolean``
+      - ``boolean``\ [1]_
       - Indicates that this is the latest release so far.
     * - ``is-pre-release``
-      - ``boolean``
+      - ``boolean``\ [1]_
       - Indicates that this is a pre-release.
     * - ``is-post-release``
-      - ``boolean``
+      - ``boolean``\ [1]_
       - Indicates that this is a post-release.
     * - ``is-unreleased``
-      - ``boolean``
+      - ``boolean``\ [1]_
       - Indicates that action returned an unreleased section of changelog.
+    * - ``data``
+      - ``object``\ [1]_
+      - Full JSON output of the "chk find" command.
+
+.. [1] GitHub actions encode all non-string outputs as JSON. Make sure to use
+       ``fromJSON`` function on it.

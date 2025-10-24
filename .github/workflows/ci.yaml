@@ -181,6 +181,8 @@ jobs:
       - name: Install CI dependencies
         run: python -m pip install .
       - name: Update branches
-        run: python scripts/update_branches --push refs/tags/v0.0.0-beta1
+        run: |
+          git remote set-url origin git@github.com:taminomara/cl-keeper.git
+          python scripts/update_branches --push refs/tags/v0.0.0-beta1
         env:
           GIT_SSH_COMMAND: "ssh -vvv -i ~/.ssh/deploy_key -o IdentitiesOnly=yes"

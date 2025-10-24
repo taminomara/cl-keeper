@@ -137,8 +137,8 @@ jobs:
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
-          prerelease: ${{ needs.build.outputs.is-pre-release }}
-          draft: ${{ needs.build.outputs.is-unreleased }}
+          prerelease: ${{ fromJSON(needs.build.outputs.is-pre-release) }}
+          draft: ${{ fromJSON(needs.build.outputs.is-unreleased) }}
           body: |
             ## Changelog
 

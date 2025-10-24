@@ -1238,7 +1238,3 @@ class Theme(yuio.theme.DefaultTheme):
 
 
 main.theme = Theme
-
-
-if __name__ == "__main__":
-    main.run()

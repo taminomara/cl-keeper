@@ -75,7 +75,7 @@ Changelog = "https://github.com/taminomara/cl-keeper/blob/main/CHANGELOG.md"
 include = ["cl_keeper"]
 
 [project.scripts]
-chk = "cl_keeper.app:main.run"
+chk = "cl_keeper.__main__:main.run"
 
 [build-system]
 requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2", "wheel>=0.40"]

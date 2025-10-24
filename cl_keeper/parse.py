@@ -3,6 +3,11 @@ import re
 import typing as _t
 
 import mdformat.plugins
+import mdformat_footnote  # type: ignore
+import mdformat_frontmatter  # type: ignore
+import mdformat_gfm._mdformat_plugin  # type: ignore
+import mdformat_gfm_alerts
+import mdformat_tables  # type: ignore
 import packaging.version
 import semver
 from markdown_it import MarkdownIt
@@ -71,8 +76,22 @@ def build_parser() -> MarkdownIt:
     parser.options["store_labels"] = True
     parser.options["parser_extension"] = []
     parser.options["mdformat"] = {}
-    for name in ["footnote", "frontmatter", "tables", "gfm_alerts", "gfm"]:
-        plugin = mdformat.plugins.PARSER_EXTENSIONS[name]
+
+    print(1)
+
+    # Note: entrypoint discovery system doesn't work in standalone nuitka builds.
+    # We load all plugins manually.
+    plugins = [
+        ("footnote", mdformat_footnote),
+        ("frontmatter", mdformat_frontmatter),
+        ("tables", mdformat_tables),
+        ("gfm_alerts", mdformat_gfm_alerts),
+        ("gfm", mdformat_gfm._mdformat_plugin),
+    ]
+
+    for name, plugin in plugins:
+        print(2, name)
+        mdformat.plugins.PARSER_EXTENSIONS.setdefault(name, plugin)  # type: ignore
         if plugin not in parser.options["parser_extension"]:
             parser.options["parser_extension"].append(plugin)
             plugin.update_mdit(parser)

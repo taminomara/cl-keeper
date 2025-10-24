@@ -119,6 +119,7 @@ jobs:
         os:
           - ubuntu-latest
           - macos-latest
+          - macos-13
           - windows-latest
     runs-on: ${{ matrix.os }}
     steps:
@@ -126,10 +127,18 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Set up python 3.13
-        uses: actions/setup-python@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        if: matrix.os != 'macos-latest'
         with:
-          python-version: 3.13
+          python-version: "3.13"
+          architecture: "x64"
+      - name: Setup Python for ARM
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          architecture: "arm64"
+        if: matrix.os == 'macos-latest'
       - name: Update pip
         run: python -m pip install --upgrade pip
       - name: Install dependencies
@@ -141,16 +150,15 @@ jobs:
           script-name: cl_keeper
           mode: onefile
           deployment: true
-          output-file: chk-${{ runner.os }}
+          output-file: chk-${{ runner.os }}-${{ runner.arch }}
       - name: Upload the build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: build-${{ runner.os }}
+          name: build-${{ runner.os }}-${{ runner.arch }}
           path: |
             build/*.exe
             build/*.bin
             build/*.app/**/*
-            build/*.dist/**/*
           include-hidden-files: true
 
   # Builds and publishes python packages.

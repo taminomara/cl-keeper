@@ -179,7 +179,7 @@ jobs:
       - name: Update pip
         run: python -m pip install --upgrade pip
       - name: Install CI dependencies
-        run: python -m pip install . --group ci
+        run: python -m pip install .
       - name: Export deploy key
         run: ssh-add - <<< "${DEPLOY_KEY}"
       - name: Update branches

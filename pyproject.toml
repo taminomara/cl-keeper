@@ -64,9 +64,6 @@ doc = [
     "furo==2025.9.25",
     "sphinx_design==0.6.1",
 ]
-ci = [
-    "PyGithub==2.8.1",
-]
 
 [project.urls]
 Documentation = "https://cl-keeper.readthedocs.io/en/stable/"

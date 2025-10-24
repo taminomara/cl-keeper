@@ -90,7 +90,6 @@ def build_parser() -> MarkdownIt:
     ]
 
     for name, plugin in plugins:
-        print(2, name)
         mdformat.plugins.PARSER_EXTENSIONS.setdefault(name, plugin)  # type: ignore
         if plugin not in parser.options["parser_extension"]:
             parser.options["parser_extension"].append(plugin)

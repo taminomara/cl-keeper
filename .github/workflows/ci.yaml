@@ -10,9 +10,6 @@ on:
       - main
 
 jobs:
-  # Runs main tests for the package.
-  #
-  # Runs on all events except when closing a pull request.
   test:
     name: Test package
     strategy:
@@ -61,9 +58,26 @@ jobs:
         if: ${{ matrix.type == 'code style' }}
         run: pre-commit run -a
 
-  # Builds python packages.
-  #
-  # Only runs on tag pushes.
+  test-action:
+    name: Test action
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Run action
+        id: action
+        uses: ./
+      - name: Print results
+        run: |
+          echo 'text=${{ steps.action.outputs.text }}'
+          echo 'is-latest=${{ steps.action.outputs.is-latest }}'
+          echo 'is-pre-release=${{ steps.action.outputs.is-pre-release }}'
+          echo 'is-post-release=${{ steps.action.outputs.is-post-release }}'
+          echo 'is-unreleased=${{ steps.action.outputs.is-unreleased }}'
+          echo 'data=${{ steps.action.outputs.data }}'
+
   build:
     name: Build package
     if: ${{ github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags') }}
@@ -109,10 +123,9 @@ jobs:
           name: python-package-distributions
           path: dist/
 
-  # Builds executables
-  #
-  # Only runs on tag pushes.
-  nuitka-build:
+  build-nuitka:
+    name: Build executables
+    if: ${{ github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags') }}
     strategy:
       fail-fast: true
       matrix:
@@ -150,21 +163,19 @@ jobs:
           script-name: cl_keeper
           mode: onefile
           deployment: true
-          output-file: chk-${{ runner.os }}-${{ runner.arch }}
+          output-file: chk-${{ runner.os }}-${{ runner.arch }}${{ runner.os == windows-latest && '.exe' || '' }}
       - name: Upload the build artifact
         uses: actions/upload-artifact@v4
         with:
           name: build-${{ runner.os }}-${{ runner.arch }}
-          path: build
+          path: build/chk-*
           include-hidden-files: true
 
-  # Builds and publishes python packages.
-  #
-  # Only runs on tag pushes.
   publish_to_pypi:
     name: Publish package to PyPi
     needs:
       - test
+      - test-action
       - build
     if: ${{ github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags') }}
     runs-on: ubuntu-latest
@@ -184,6 +195,16 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           attestations: false
+
+  publish_to_github:
+    name: Publish package to PyPi
+    needs:
+      - build
+      - build-nuitka
+      - publish_to_pypi
+    if: ${{ github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags') }}
+    runs-on: ubuntu-latest
+    steps:
       - name: Download binary builds
         uses: actions/download-artifact@v4
         with:
@@ -203,9 +224,6 @@ jobs:
             [See release on PyPi](${{ needs.build.outputs.link }})
           files: build/*
 
-  # Updates pointers to v1 and v1.x branches.
-  #
-  # Only runs on tag pushes.
   update_release_branches:
     name: Update partial version branches
     needs:
@@ -244,24 +262,3 @@ jobs:
           python scripts/update_branches --push ${{ github.event.ref }}
         env:
           GIT_SSH_COMMAND: "ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes"
-
-  # Try running the action in this repo.
-  test_action:
-    name: Test action
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout source
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Run action
-        id: action
-        uses: ./
-      - name: Print results
-        run: |
-          echo 'text=${{ steps.action.outputs.text }}'
-          echo 'is-latest=${{ steps.action.outputs.is-latest }}'
-          echo 'is-pre-release=${{ steps.action.outputs.is-pre-release }}'
-          echo 'is-post-release=${{ steps.action.outputs.is-post-release }}'
-          echo 'is-unreleased=${{ steps.action.outputs.is-unreleased }}'
-          echo 'data=${{ steps.action.outputs.data }}'

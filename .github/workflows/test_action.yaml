@@ -24,8 +24,8 @@ jobs:
         uses: ./
       - name: Print results
         run: |
-          echo "${{ steps.action.outputs.text }}"
-          echo "${{ steps.action.outputs.is-latest }}"
-          echo "${{ steps.action.outputs.is-pre-release }}"
-          echo "${{ steps.action.outputs.is-post-release }}"
-          echo "${{ steps.action.outputs.is-unreleased }}"
+          echo "text=${{ toJSON(steps.action.outputs.text) }}"
+          echo "is-latest=${{ toJSON(steps.action.outputs.is-latest) }}"
+          echo "is-pre-release=${{ toJSON(steps.action.outputs.is-pre-release) }}"
+          echo "is-post-release=${{ toJSON(steps.action.outputs.is-post-release) }}"
+          echo "is-unreleased=${{ toJSON(steps.action.outputs.is-unreleased) }}"

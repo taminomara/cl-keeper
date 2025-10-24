@@ -43,6 +43,9 @@ All of them accept a few universal flags:
 --strict
     Increases severity of all messages by one level.
 
+`--cfg-*`:flag:
+    Overrides any config option. See details in :doc:`config chapter <config>`.
+
 
 Check
 -----

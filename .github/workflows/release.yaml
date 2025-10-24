@@ -1,0 +1,185 @@
+name: Release package
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    name: Build package
+    runs-on: ubuntu-latest
+    outputs:
+      is-pre-release: ${{ steps.changelog.outputs.is-pre-release }}
+      is-unreleased: ${{ steps.changelog.outputs.is-unreleased }}
+      is-latest: ${{ steps.changelog.outputs.is-latest }}
+      text: ${{ steps.changelog.outputs.text }}
+      link: ${{ steps.metadata.outputs.link }}
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Generate release metadata
+        id: metadata
+        run: |
+          ref="${{ github.ref }}";
+          version=${ref#refs/tags/v};
+          link="https://pypi.org/p/cl-keeper/${version}/";
+          echo "version=${version}" >> $GITHUB_OUTPUT
+          echo "link=${link}" >> $GITHUB_OUTPUT
+      - name: Parse Changelog
+        id: changelog
+        uses: ./
+        with:
+          version: ${{ steps.metadata.outputs.version }}
+          strict: true
+      - name: Set up python 3.13
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.13
+      - name: Install build
+        run: |
+          pip install build
+      - name: Build project
+        run: |
+          python3 -m build .
+      - name: Upload the build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
+
+  build-nuitka:
+    name: Build executables
+    strategy:
+      fail-fast: true
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - macos-13
+          - windows-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        if: matrix.os != 'macos-latest'
+        with:
+          python-version: "3.13"
+          architecture: "x64"
+      - name: Setup Python for ARM
+        uses: actions/setup-python@v5
+        if: matrix.os == 'macos-latest'
+        with:
+          python-version: "3.13"
+          architecture: "arm64"
+      - name: Update pip
+        run: python -m pip install --upgrade pip
+      - name: Install dependencies
+        run: python -m pip install .
+      - name: Build executable
+        uses: Nuitka/Nuitka-Action@main
+        with:
+          nuitka-version: main
+          script-name: cl_keeper
+          mode: onefile
+          deployment: true
+          output-file: chk-${{ runner.os }}-${{ runner.arch }}${{ runner.os == 'windows-latest' && '.exe' || '' }}
+      - name: Upload the build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ runner.os }}-${{ runner.arch }}
+          path: build/chk-*
+          include-hidden-files: true
+
+  publish_to_pypi:
+    name: Publish package to PyPi
+    needs:
+      - build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/cl-keeper
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
+      - name: Publish to pypi
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          attestations: false
+
+  publish_to_github:
+    name: Publish GitHub release
+    needs:
+      - build
+      - build-nuitka
+      - publish_to_pypi
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download binary builds
+        uses: actions/download-artifact@v4
+        with:
+          pattern: build-*
+          path: build/
+          merge-multiple: true
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          prerelease: ${{ fromJSON(needs.build.outputs.is-pre-release) }}
+          draft: ${{ fromJSON(needs.build.outputs.is-unreleased) }}
+          body: |
+            ## Changelog
+
+            ${{ needs.build.outputs.text }}
+
+            [See release on PyPi](${{ needs.build.outputs.link }})
+          files: build/*
+
+  update_release_branches:
+    name: Update partial version branches
+    needs:
+      - build
+      - publish_to_pypi
+    if: ${{ fromJSON(needs.build.outputs.is-latest) }}
+    runs-on: ubuntu-latest
+    environment:
+      name: release-anchors
+    permissions:
+      contents: write
+    steps:
+      - name: Export deploy key
+        run: |
+          mkdir ~/.ssh
+          printenv DEPLOY_KEY > ~/.ssh/deploy_key
+          chmod 400 ~/.ssh/deploy_key
+          ssh-keygen -l -f ~/.ssh/deploy_key
+        env:
+          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up python 3.13
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.13
+      - name: Update pip
+        run: python -m pip install --upgrade pip
+      - name: Install CI dependencies
+        run: python -m pip install .
+      - name: Update branches
+        run: |
+          git remote set-url origin git@github.com:taminomara/cl-keeper.git
+          python scripts/update_branches --push ${{ github.event.ref }}
+        env:
+          GIT_SSH_COMMAND: "ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes"

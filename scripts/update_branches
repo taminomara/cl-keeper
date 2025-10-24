@@ -50,7 +50,7 @@ def main(
             yuio.io.info("Skipping push: dry-run")
         else:
             yuio.io.info("Pushing branches: `%r`", branches)
-            repo.git("push", "-f", *branches)
+            repo.git("push", "-f", "origin", *branches)
 
     yuio.io.success("Done")
 

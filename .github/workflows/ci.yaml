@@ -151,9 +151,9 @@ jobs:
   # Only runs on tag pushes.
   update_release_branches:
     name: Update partial version branches
-    needs:
-      - publish_to_pypi
-    if: ${{ github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags') }}
+    # needs:
+    #   - publish_to_pypi
+    # if: ${{ github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags') }}
     runs-on: ubuntu-latest
     environment:
       name: release-anchors
@@ -183,6 +183,6 @@ jobs:
       - name: Export deploy key
         run: ssh-add - <<< "${DEPLOY_KEY}"
       - name: Update branches
-        run: python scripts/update_branches --push ${{ github.event.ref }}
+        run: python scripts/update_branches --push refs/tags/v0.0.0-beta1
         env:
           GIT_SSH_COMMAND: "ssh -vvv -i ~/.ssh/deploy_key -o IdentitiesOnly=yes"

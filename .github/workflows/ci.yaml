@@ -71,6 +71,7 @@ jobs:
     outputs:
       is-pre-release: ${{ steps.changelog.outputs.is-pre-release }}
       is-unreleased: ${{ steps.changelog.outputs.is-unreleased }}
+      is-latest: ${{ steps.changelog.outputs.is-latest }}
       text: ${{ steps.changelog.outputs.text }}
       link: ${{ steps.metadata.outputs.link }}
     steps:
@@ -151,9 +152,10 @@ jobs:
   # Only runs on tag pushes.
   update_release_branches:
     name: Update partial version branches
-    # needs:
-    #   - publish_to_pypi
-    # if: ${{ github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags') }}
+    needs:
+      - build
+      - publish_to_pypi
+    if: ${{ github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags') && fromJSON(needs.build.outputs.is-latest) }}
     runs-on: ubuntu-latest
     environment:
       name: release-anchors
@@ -183,9 +185,9 @@ jobs:
       - name: Update branches
         run: |
           git remote set-url origin git@github.com:taminomara/cl-keeper.git
-          python scripts/update_branches --push refs/tags/v0.0.0-beta1
+          python scripts/update_branches --push ${{ github.event.ref }}
         env:
-          GIT_SSH_COMMAND: "ssh -vvv -i ~/.ssh/deploy_key -o IdentitiesOnly=yes"
+          GIT_SSH_COMMAND: "ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes"
 
   # Try running the action in this repo.
   test_action:

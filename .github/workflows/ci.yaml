@@ -155,10 +155,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: build-${{ runner.os }}-${{ runner.arch }}
-          path: |
-            build/*.exe
-            build/*.bin
-            build/*.app/**/*
+          path: build
           include-hidden-files: true
 
   # Builds and publishes python packages.

@@ -139,9 +139,9 @@ jobs:
         with:
           nuitka-version: main
           script-name: cl_keeper
-          mode: onefile
+          onefile: true
           deployment: true
-          output-file: chk-${{ runner.os }}_${{ env.ARCHITECTURE }}
+          output-file: chk-${{ runner.os }}
       - name: Upload the build artifact
         uses: actions/upload-artifact@v4
         with:

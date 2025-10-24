@@ -186,3 +186,24 @@ jobs:
           python scripts/update_branches --push refs/tags/v0.0.0-beta1
         env:
           GIT_SSH_COMMAND: "ssh -vvv -i ~/.ssh/deploy_key -o IdentitiesOnly=yes"
+
+  # Try running the action in this repo.
+  test_action:
+    name: Test action
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Run action
+        id: action
+        uses: ./
+      - name: Print results
+        run: |
+          echo 'text=${{ steps.action.outputs.text }}'
+          echo 'is-latest=${{ steps.action.outputs.is-latest }}'
+          echo 'is-pre-release=${{ steps.action.outputs.is-pre-release }}'
+          echo 'is-post-release=${{ steps.action.outputs.is-post-release }}'
+          echo 'is-unreleased=${{ steps.action.outputs.is-unreleased }}'
+          echo 'data=${{ steps.action.outputs.data }}'

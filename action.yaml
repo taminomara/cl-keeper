@@ -10,14 +10,16 @@ branding:
 inputs:
   config:
     description: Path to the config file, relative to repository root.
-    required: false
+    required: true
+    default: ""
   changelog:
     description: Path to the changelog file, relative to repository root.
-    required: false
+    required: true
+    default: ""
   version:
     description: Version to search for, default is "latest".
     required: true
-    default: latest
+    default: "latest"
   strict:
     description: Run changelog keeper in strict mode.
     required: true
@@ -64,5 +66,5 @@ runs:
       env:
         FLAG_CONFIG: ${{ inputs.config != '' && format('-c {0}', inputs.config) || '' }}
         FLAG_CHANGELOG: ${{ inputs.changelog != '' && format('-i {0}', inputs.changelog) || '' }}
-        FLAG_STRICT: ${{ (inputs.strict == 'true' || inputs.strict == true) && '--strict' || '' }}
-        FLAG_IGNORE_ERRORS: ${{ (inputs.ignore-errors == 'true' || inputs.ignore-errors == true) && '--ignore-errors' || '' }}
+        FLAG_STRICT: ${{ fromJSON(inputs.strict) && '--strict' || '' }}
+        FLAG_IGNORE_ERRORS: ${{ fromJSON(inputs.ignore-errors) && '--ignore-errors' || '' }}

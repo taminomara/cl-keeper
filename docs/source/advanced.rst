@@ -123,6 +123,3 @@ Here's an example of using ``taminomara/cl-keeper@v1`` in combination with
     * - ``is-unreleased``
       - ``boolean``
       - Indicates that action returned an unreleased section of changelog.
-    * - ``data``
-      - ``object``
-      - Full JSON output of the "chk find" command.

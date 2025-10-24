@@ -43,9 +43,6 @@ outputs:
   is-unreleased:
     description: Indicates that action returned an unreleased section of changelog.
     value: ${{ fromJSON(steps.run-chk.outputs.data).isUnreleased }}
-  data:
-    description: Full JSON output of the "chk find" command.
-    value: ${{ fromJSON(steps.run-chk.outputs.data) }}
 
 runs:
   using: composite

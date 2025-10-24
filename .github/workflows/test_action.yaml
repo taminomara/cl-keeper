@@ -1,0 +1,31 @@
+name: Test action
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  # Try running the action in this repo.
+  test:
+    name: Test action
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Run action
+        id: action
+        uses: ./
+      - name: Print results
+        run: |
+          echo "${{ steps.action.outputs.text }}"
+          echo "${{ steps.action.outputs.is-latest }}"
+          echo "${{ steps.action.outputs.is-pre-release }}"
+          echo "${{ steps.action.outputs.is-post-release }}"
+          echo "${{ steps.action.outputs.is-unreleased }}"

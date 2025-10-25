@@ -30,12 +30,10 @@ from cl_keeper.config import (
     VersionFormat,
 )
 from cl_keeper.context import Context, IssueCode, IssueScope
-from cl_keeper.fix import (
-    fix as _fix,
-    make_link_for_section as _make_link_for_section,
-    format_section_label as _format_section_label,
-    format_section_heading as _format_section_heading,
-)
+from cl_keeper.fix import fix as _fix
+from cl_keeper.fix import format_section_heading as _format_section_heading
+from cl_keeper.fix import format_section_label as _format_section_label
+from cl_keeper.fix import make_link_for_section as _make_link_for_section
 from cl_keeper.model import (
     Changelog,
     ReleaseSection,

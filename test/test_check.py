@@ -6,7 +6,13 @@ import pytest
 import semver
 
 from cl_keeper.check import check
-from cl_keeper.config import Config, IssueCode, IssueSeverity, LinkTemplates, VersionFormat
+from cl_keeper.config import (
+    Config,
+    IssueCode,
+    IssueSeverity,
+    LinkTemplates,
+    VersionFormat,
+)
 from cl_keeper.context import Context
 from cl_keeper.model import RepoVersion
 from cl_keeper.parse import parse
@@ -621,18 +627,22 @@ def test_check_tags(data_regression):
 
 
 def test_override_severity(data_regression):
-    input = textwrap.dedent("""
+    input = textwrap.dedent(
+        """
         # Changelog
         ## 1.0.0
         Content
-    """).strip()
+    """
+    ).strip()
     ctx = Context(
         pathlib.Path("__test__"),
         input,
-        Config(severity={
-            IssueCode.MISSING_RELEASE_LINK: IssueSeverity.INFO,
-            IssueCode.MISSING_RELEASE_DATE: IssueSeverity.NONE,
-        }),
+        Config(
+            severity={
+                IssueCode.MISSING_RELEASE_LINK: IssueSeverity.INFO,
+                IssueCode.MISSING_RELEASE_DATE: IssueSeverity.NONE,
+            }
+        ),
         False,
         LinkTemplates("", "", "", {}),
     )
@@ -646,18 +656,22 @@ def test_override_severity(data_regression):
 
 
 def test_override_severity_strict(data_regression):
-    input = textwrap.dedent("""
+    input = textwrap.dedent(
+        """
         # Changelog
         ## 1.0.0
         Content
-    """).strip()
+    """
+    ).strip()
     ctx = Context(
         pathlib.Path("__test__"),
         input,
-        Config(severity={
-            IssueCode.MISSING_RELEASE_LINK: IssueSeverity.INFO,
-            IssueCode.MISSING_RELEASE_DATE: IssueSeverity.NONE,
-        }),
+        Config(
+            severity={
+                IssueCode.MISSING_RELEASE_LINK: IssueSeverity.INFO,
+                IssueCode.MISSING_RELEASE_DATE: IssueSeverity.NONE,
+            }
+        ),
         True,
         LinkTemplates("", "", "", {}),
     )

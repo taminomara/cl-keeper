@@ -1,15 +1,16 @@
-from dataclasses import dataclass
 import pathlib
 import textwrap
+from dataclasses import dataclass
+
 import pytest
+from markdown_it.token import Token
+from markdown_it.tree import SyntaxTreeNode
 
 from cl_keeper.config import Config
 from cl_keeper.context import Context
 from cl_keeper.model import SubSection
 from cl_keeper.parse import build_parser, parse
-from cl_keeper.sort import sorted_by_key, merge_sections, merge_subsections
-from markdown_it.tree import SyntaxTreeNode
-from markdown_it.token import Token
+from cl_keeper.sort import merge_sections, merge_subsections, sorted_by_key
 
 
 @dataclass
@@ -184,7 +185,7 @@ def test_sort(args, expected):
             """,
             id="complex",
         ),
-    ]
+    ],
 )
 def test_merge_sections(input, expected):
     ctx = Context(

@@ -18,7 +18,9 @@ from cl_keeper.model import (
 def check(
     changelog: Changelog, ctx: Context, repo_versions: dict[str, RepoVersion] | None
 ):
-    found_duplicates, found_duplicates_unreleased = check_duplicates(changelog.sections, ctx)
+    found_duplicates, found_duplicates_unreleased = check_duplicates(
+        changelog.sections, ctx
+    )
     found_unordered_sections, found_unordered_unreleased = check_order(
         changelog.sections, ctx
     )

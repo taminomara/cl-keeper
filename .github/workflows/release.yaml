@@ -55,10 +55,11 @@ jobs:
       fail-fast: true
       matrix:
         os:
-          - ubuntu-latest
-          # - macos-latest
-          # - macos-13
-          # - windows-latest
+          - ubuntu-22.04
+          - ubuntu-22.04-arm
+          - macos-latest
+          - macos-13
+          - windows-latest
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout source

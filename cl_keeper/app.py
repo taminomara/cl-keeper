@@ -19,7 +19,7 @@ import yuio.io
 import yuio.parse
 import yuio.theme
 from markdown_it.tree import SyntaxTreeNode
-
+import yuio.term
 from cl_keeper._version import __version__
 from cl_keeper.check import check as _check
 from cl_keeper.config import (
@@ -783,7 +783,10 @@ def pre_commit_check(
     ):
         return
 
-    fix.command(diff=diff)
+    if yuio.term.detect_ci():
+        check.command()
+    else:
+        fix.command(diff=diff)
 
 
 @main.subcommand(help=yuio.DISABLED)

@@ -1,0 +1,7 @@
+- code: DuplicateReleases
+  mag: Found multiple sections for unreleased changes
+  pos:
+  - 2
+  - 3
+  scope: 1
+  severity: 4

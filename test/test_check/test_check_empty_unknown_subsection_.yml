@@ -1,0 +1,14 @@
+- code: UnknownChangeCategory
+  mag: Unknown change group `What?`
+  pos:
+  - 2
+  - 3
+  scope: 1
+  severity: 3
+- code: EmptyChangeCategory
+  mag: Sub-section `what?` for release `1.0.0` is empty
+  pos:
+  - 1
+  - 2
+  scope: 1
+  severity: 4

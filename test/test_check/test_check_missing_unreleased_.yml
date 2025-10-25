@@ -1,0 +1,7 @@
+- code: MissingReleaseLink
+  mag: Missing link for unreleased section, should be <c path>https://example.com/v1.0.0..HEAD</c>
+  pos:
+  - 1
+  - 2
+  scope: 1
+  severity: 3

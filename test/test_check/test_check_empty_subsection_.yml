@@ -1,0 +1,7 @@
+- code: EmptyChangeCategory
+  mag: Sub-section `removed` for release `1.0.0` is empty
+  pos:
+  - 1
+  - 2
+  scope: 1
+  severity: 4

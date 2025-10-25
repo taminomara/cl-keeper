@@ -1,0 +1,5 @@
+- code: GeneralFormattingError
+  mag: Changelog must start with a first level heading
+  pos: null
+  scope: 1
+  severity: 3

@@ -1,0 +1,10 @@
+- code: MissingTagForRelease
+  mag: Missing tags for releases `0.0.2`, `1.0.0-beta0`, `1.0.2`
+  pos: null
+  scope: 0
+  severity: 2
+- code: MissingReleaseForTag
+  mag: Missing changelog sections for release `1.0.0`
+  pos: null
+  scope: 0
+  severity: 2

@@ -1,0 +1,7 @@
+- code: GeneralFormattingError
+  mag: Unexpected first level heading
+  pos:
+  - 4
+  - 5
+  scope: 1
+  severity: 3

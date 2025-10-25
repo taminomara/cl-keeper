@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-import math
 import typing as _t
 
 from cl_keeper.model import Section, SubSection
-from cl_keeper.typing import Ord, SupportsPos
+from cl_keeper.typing import Ord
 
 
 def sorted_sections(sections: _t.Iterable[Section]) -> list[Section]:
@@ -34,7 +33,7 @@ def _sections_key(section: Section):
         return None
 
 
-def sorted_by_key[T: SupportsPos, K: Ord](
+def sorted_by_key[T, K: Ord](
     items: _t.Iterable[T], key: _t.Callable[[T], K | None], reverse: bool = False
 ) -> list[T]:
     """
@@ -43,34 +42,40 @@ def sorted_by_key[T: SupportsPos, K: Ord](
 
     """
 
-    orderable: list[tuple[K, T]] = []
-    unorderable: list[T] = []
+    orderable: list[tuple[K, int, T]] = []
+    unorderable: list[tuple[int, T]] = []
 
-    for item in items:
+    for i, item in enumerate(items):
         if (k := key(item)) is not None:
-            orderable.append((k, item))
+            orderable.append((k, i, item))
         else:
-            unorderable.append(item)
+            unorderable.append((i, item))
 
     orderable.sort(key=lambda x: x[0], reverse=reverse)
 
     if not unorderable:
-        return [v for _, v in orderable]
+        return [v for _, _, v in orderable]
     elif not orderable:
-        return unorderable
+        return [v for _, v in unorderable]
 
     # Merge ordered and unordered items based on their position in the source.
+    # Note: we don't use actual line numbers, because generated items don't have them.
+    # Instead, we use indices from the original sequence.
     result: list[T] = []
     i, j = 0, 0
     while i < len(orderable) or j < len(unorderable):
         left = right = None
+        left_pos = right_pos = None
         if i < len(orderable):
-            left = orderable[i][1]
+            _, left_pos, left = orderable[i]
         if j < len(unorderable):
-            right = unorderable[j]
-        if left and right:
-            left_pos = left.map or (math.inf, 0)
-            right_pos = right.map or (math.inf, 0)
+            right_pos, right = unorderable[j]
+        if (
+            left is not None
+            and left_pos is not None
+            and right is not None
+            and right_pos is not None
+        ):
             if left_pos <= right_pos:
                 result.append(left)
                 i += 1
@@ -93,7 +98,7 @@ def merge_sections(lhs: Section, rhs: Section):
 
     """
 
-    subsections: dict[str | None, SubSection] = {}
+    subsections: dict[str, SubSection] = {}
     for section in lhs, rhs:
         for subsection in section.subsections:
             if subsection.category in subsections:

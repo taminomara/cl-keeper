@@ -1,0 +1,7 @@
+- code: IncorrectReleaseDate
+  mag: Release date for release `1.0.2` is different from commit date `2025-01-26`
+  pos:
+  - 1
+  - 2
+  scope: 1
+  severity: 2

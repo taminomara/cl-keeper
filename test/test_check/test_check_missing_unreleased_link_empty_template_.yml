@@ -1,0 +1,7 @@
+- code: MissingReleaseLink
+  mag: Missing link for unreleased section
+  pos:
+  - 1
+  - 2
+  scope: 1
+  severity: 3

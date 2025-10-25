@@ -1,0 +1,14 @@
+- code: ChangeCategoryHeadingFormat
+  mag: Heading for change group isn't properly formatted, should be `Added`
+  pos:
+  - 2
+  - 3
+  scope: 1
+  severity: 3
+- code: DuplicateChangeCategories
+  mag: Found multiple sub-sections for `added` category in release `1.0.0`
+  pos:
+  - 4
+  - 5
+  scope: 1
+  severity: 4

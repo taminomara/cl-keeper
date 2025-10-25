@@ -18,13 +18,16 @@ from cl_keeper.model import (
 def check(
     changelog: Changelog, ctx: Context, repo_versions: dict[str, RepoVersion] | None
 ):
-    check_duplicates(changelog.sections, ctx)
-    found_unordered_sections = check_order(changelog.sections, ctx)
+    found_duplicates, found_duplicates_unreleased = check_duplicates(changelog.sections, ctx)
+    found_unordered_sections, found_unordered_unreleased = check_order(
+        changelog.sections, ctx
+    )
     check_links(
         changelog.sections,
         repo_versions,
         ctx,
-        not found_unordered_sections,
+        not found_unordered_sections and not found_duplicates,
+        not found_unordered_unreleased and not found_duplicates_unreleased,
     )
     check_dates(changelog.sections, ctx, repo_versions)
     check_section_content(changelog.sections, ctx)
@@ -35,6 +38,8 @@ def check(
 def check_duplicates(sections: _t.Iterable[Section], ctx: Context):
     seen_unreleased = False
     seen_versions: set[str] = set()
+    found_duplicates = False
+    found_duplicates_unreleased = False
 
     for section in sections:
         if section.is_unreleased():
@@ -44,6 +49,7 @@ def check_duplicates(sections: _t.Iterable[Section], ctx: Context):
                     "Found multiple sections for unreleased changes",
                     pos=section,
                 )
+                found_duplicates_unreleased = True
             seen_unreleased = True
             check_duplicates_in_subsections(section, ctx)
         elif release := section.as_release():
@@ -54,8 +60,11 @@ def check_duplicates(sections: _t.Iterable[Section], ctx: Context):
                     release.version,
                     pos=section,
                 )
+                found_duplicates = True
             seen_versions.add(release.canonized_version)
             check_duplicates_in_subsections(section, ctx)
+
+    return found_duplicates, found_duplicates_unreleased
 
 
 def check_duplicates_in_subsections(section: Section, ctx: Context):
@@ -89,17 +98,19 @@ def check_order(sections: list[Section], ctx: Context):
             "Changelog must start with a first level heading",
             pos=sections[0] if sections else None,
         )
-        return
     last_version = None
     found_unordered_sections = False
+    found_unordered_unreleased = False
     for section in sections:
         if section.is_unreleased():
             if last_version is not None:
-                ctx.issue(
-                    IssueCode.RELEASE_ORDERING,
-                    "Section for unreleased changes must be first in the changelog",
-                    pos=section,
-                )
+                if not found_unordered_unreleased:
+                    ctx.issue(
+                        IssueCode.RELEASE_ORDERING,
+                        "Section for unreleased changes must be first in the changelog",
+                        pos=section,
+                    )
+                found_unordered_unreleased = True
             check_order_in_subsection(section, ctx)
         elif release := section.as_release():
             if (
@@ -119,7 +130,7 @@ def check_order(sections: list[Section], ctx: Context):
                 last_version = release.parsed_version
             check_order_in_subsection(section, ctx)
 
-    return found_unordered_sections
+    return found_unordered_sections, found_unordered_unreleased
 
 
 def check_order_in_subsection(section: Section, ctx: Context):
@@ -149,6 +160,7 @@ def check_links(
     repo_versions: dict[str, RepoVersion] | None,
     ctx: Context,
     can_trust_order: bool,
+    can_trust_order_unreleased: bool,
 ):
     if not ctx.config.add_release_link:
         for section in reversed(sections):
@@ -166,12 +178,17 @@ def check_links(
     for section in reversed(sections):
         if not isinstance(section, (ReleaseSection, UnreleasedSection)):
             continue
-        if section.is_unreleased() and not can_trust_order:
+        if section.is_unreleased() and (
+            not can_trust_order or not can_trust_order_unreleased
+        ):
             continue
 
-        canonical_link, prev_tag = make_link_for_section(
+        canonical_link, this_tag = make_link_for_section(
             section, prev_tag, repo_versions, ctx
         )
+        if section.is_release() and this_tag == prev_tag:
+            continue  # duplicate release
+        prev_tag = this_tag
 
         if canonical_link is None:
             if section.version_link is not None:
@@ -182,7 +199,7 @@ def check_links(
                 )
         else:
             if section.version_link is None:
-                if can_trust_order:
+                if can_trust_order and canonical_link:
                     ctx.issue(
                         IssueCode.MISSING_RELEASE_LINK,
                         f"Missing link for {section.what()}, should be <c path>%s</c>",
@@ -195,7 +212,7 @@ def check_links(
                         f"Missing link for {section.what()}",
                         pos=section,
                     )
-            elif section.version_link != canonical_link:
+            elif canonical_link and section.version_link != canonical_link:
                 if can_trust_order:
                     ctx.issue(
                         IssueCode.MISSING_RELEASE_LINK,
@@ -244,7 +261,7 @@ def check_dates(
                     data.committer_date.isoformat(),
                     pos=release,
                 )
-        elif not ctx.config.add_release_date and release.release_date_fmt is None:
+        elif not ctx.config.add_release_date and release.release_date_fmt is not None:
             ctx.issue(
                 IssueCode.UNEXPECTED_RELEASE_DATE,
                 "Unexpected release date for release `%s`",

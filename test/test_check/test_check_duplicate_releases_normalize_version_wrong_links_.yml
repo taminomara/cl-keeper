@@ -1,0 +1,14 @@
+- code: DuplicateReleases
+  mag: Found multiple sections for release `1.0.0beta0`
+  pos:
+  - 3
+  - 4
+  scope: 1
+  severity: 4
+- code: IncorrectReleaseLink
+  mag: Potentially incorrect link for release `1.0.0b0`
+  pos:
+  - 1
+  - 2
+  scope: 1
+  severity: 3

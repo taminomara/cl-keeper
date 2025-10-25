@@ -320,7 +320,12 @@ def create_section(
         release_comment=release_comment,
     )
 
-    if not found_unresolved_link:
+    if not ctx.config.add_release_date and section.release_date_fmt is not None:
+        # Note: this is not a heading that's not properly formatted,
+        # it just has release date when it shouldn't.
+        # This case will be handled in check_dates.
+        pass
+    elif not found_unresolved_link:
         canonical_heading = format_section_heading_text(section, ctx)
         if canonical_heading != heading_text:
             ctx.issue(

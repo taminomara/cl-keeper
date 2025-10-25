@@ -30,7 +30,12 @@ from cl_keeper.config import (
     VersionFormat,
 )
 from cl_keeper.context import Context, IssueCode, IssueScope
-from cl_keeper.fix import fix as _fix
+from cl_keeper.fix import (
+    fix as _fix,
+    make_link_for_section as _make_link_for_section,
+    format_section_label as _format_section_label,
+    format_section_heading as _format_section_heading,
+)
 from cl_keeper.model import (
     Changelog,
     ReleaseSection,
@@ -57,9 +62,6 @@ logger = logging.getLogger(__name__)
 
 _GLOBAL_OPTIONS: GlobalConfig = GlobalConfig()
 
-_TRAILER_RE = re.compile(
-    r"^\s*(?:\[(?P<group>[^]]*+)\])?\s*(?P<message>.*)$", re.MULTILINE | re.DOTALL
-)
 _COMMENT_RE = re.compile(r"\<\!\-\-.*?(\-\-\>|\Z)", re.MULTILINE | re.DOTALL)
 
 
@@ -235,6 +237,8 @@ def bump(
     rc: bool = yuio.app.field(default=False, group=_PRE_RELEASE_GROUP),
     #: open generated changes for editing
     edit: bool = False,
+    #: run fix command after inserting new version.
+    fix: bool = False,
     #: commit and tag the release after updating changelog.
     commit: bool = False,
 ):
@@ -283,24 +287,42 @@ def bump(
 
     changelog = _parse(ctx)
 
+    # We will insert new section at this position.ss
+    insert_at_pos = None
+
+    # Find all unreleased section and remove them from changelog. We will insert
+    # new section at position of the first found unreleased section.
     found = None
     to_remove = set()
     for i, section, _ in _find_sections(FindMode.UNRELEASED, changelog, config):
         to_remove.add(i)
         if found is None:
             found = section
+            insert_at_pos = i
         else:
             _merge_sections(found, section)
-
     changelog.sections = [
         section for i, section in enumerate(changelog.sections) if i not in to_remove
     ]
-
     if found is None:
         found = UnreleasedSection(
             heading=None, subsections=[], version_link=None, version_label=None
         )
 
+    # Find latest release in the changelog. We will use its version for new link.
+    # If we didn't find any unreleased sections, insert new section before
+    # the first release.
+    found_latest = None
+    for i, section, _ in _find_sections(FindMode.LATEST, changelog, config):
+        found_latest = section.as_release()
+        if insert_at_pos is None:
+            insert_at_pos = max(0, i - 1)
+        break
+    # If there are no releases, insert section at the end.
+    if insert_at_pos is None:
+        insert_at_pos = len(changelog.sections)
+
+    # Bump version.
     repo_versions = None
     if isinstance(version, BumpMode) or version is None:
         repo_versions = get_repo_versions(file.parent, ctx)
@@ -329,6 +351,7 @@ def bump(
     if not ignore_errors:
         ctx.exit_if_has_errors()
 
+    # Ensure we don't create a version that's already present.
     for _, section, _ in _find_sections(version, changelog, config):
         if section.map is not None:
             pos = f" on line `{section.map[0] + 1}`"
@@ -349,17 +372,35 @@ def bump(
         release_comment=None,
     )
 
-    if edit:
+    if edit and not dry_run:
         _edit_section(changelog, ctx, new_section)
 
-    changelog.sections.append(
+    changelog.sections[insert_at_pos:insert_at_pos] = new_sections = [
         UnreleasedSection(
             heading=None, subsections=[], version_link=None, version_label=None
-        )
-    )
-    changelog.sections.append(new_section)
+        ),
+        new_section,
+    ]
 
-    _fix(changelog, ctx, repo_versions)
+    if fix:
+        _fix(changelog, ctx, repo_versions)
+    else:
+        # Generate headings and links manually.
+        prev_tag = found_latest.version if found_latest is not None else None
+        for section in reversed(new_sections):
+            if ctx.config.add_release_link:
+                section.version_link, prev_tag = _make_link_for_section(
+                    section, prev_tag, repo_versions, ctx
+                )
+                section.version_label = _format_section_label(section, ctx)
+                if section.version_label:
+                    changelog.parser_env["references"][section.version_label] = {
+                        "title": "",
+                        "href": section.version_link,
+                        "map": None,
+                    }
+
+            section.heading = _format_section_heading(section, ctx)
 
     result = _render(changelog, ctx)
 
@@ -383,7 +424,9 @@ def bump(
             "You can take a look around and make any changes before proceeding.\n"
             "Alternatively, you can cancel now and make a release commit later.\n"
         )
-        ok = yuio.io.ask[bool]("Proceed with commit and tag?", default=False)
+        ok = yuio.io.ask[bool](
+            "Proceed with commit and tag?", default=False, default_non_interactive=True
+        )
         message = f"Release {version}"
         if not ok:
             yuio.io.failure("Commit canceled")

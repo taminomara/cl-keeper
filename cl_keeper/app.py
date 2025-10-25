@@ -17,9 +17,10 @@ import yuio.complete
 import yuio.git
 import yuio.io
 import yuio.parse
+import yuio.term
 import yuio.theme
 from markdown_it.tree import SyntaxTreeNode
-import yuio.term
+
 from cl_keeper._version import __version__
 from cl_keeper.check import check as _check
 from cl_keeper.config import (

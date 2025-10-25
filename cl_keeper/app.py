@@ -590,6 +590,11 @@ def find(
                 "text": _render(changelog, ctx, tokens, disable_wrapping=True),
                 "isLatestInChangelog": found_latest_in_changelog,
                 "isLatestInSemanticOrder": found_latest,
+                "isLatest": (
+                    found_latest
+                    if found_latest is not None
+                    else found_latest_in_changelog
+                ),
                 "isPreRelease": is_pre_release,
                 "isPostRelease": is_post_release,
                 "isUnreleased": found.is_unreleased(),
@@ -667,6 +672,9 @@ the following fields:
 
   Can be `null` if requested release not found, or if unreleased section
   is requested.
+
+- <c hl/flag:sh-usage>isLatest</c> - equals to `isLatestInSemanticOrder` if it's not `null`,
+  otherwise equals to `isLatestInChangelog`.
 
 - <c hl/flag:sh-usage>isPreRelease</c> - `true` if release version contains a pre-release component,
   like `beta` or `rc`.

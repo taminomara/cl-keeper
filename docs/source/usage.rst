@@ -251,6 +251,10 @@ or :attr:`~Config.ignore_missing_releases_regexp`, an empty result is printed.
         Can be ``null`` if requested release not found, or if unreleased section
         is requested.
 
+    ``isLatest``
+        equals to `isLatestInSemanticOrder` if it's not ``null``,
+        otherwise equals to `isLatestInChangelog`.
+
     ``isPreRelease``
         ``true`` if release version contains a pre-release component,
         like ``beta`` or ``rc``.

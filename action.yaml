@@ -35,7 +35,7 @@ outputs:
     value: ${{ fromJSON(steps.run-chk.outputs.data).text }}
   is-latest:
     description: Indicates that this is the latest release so far.
-    value: ${{ fromJSON(steps.run-chk.outputs.data).isLatestInSemanticOrder }}
+    value: ${{ fromJSON(steps.run-chk.outputs.data).isLatest }}
   is-pre-release:
     description: Indicates that this is a pre-release.
     value: ${{ fromJSON(steps.run-chk.outputs.data).isPreRelease }}

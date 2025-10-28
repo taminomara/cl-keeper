@@ -59,7 +59,7 @@ from cl_keeper.vcs import get_repo_versions
 logger = logging.getLogger(__name__)
 
 
-_GLOBAL_OPTIONS: GlobalConfig = GlobalConfig()
+_GLOBAL_OPTIONS: GlobalConfig = GlobalConfig(cfg=Config())
 
 _COMMENT_RE = re.compile(r"\<\!\-\-.*?(\-\-\>|\Z)", re.MULTILINE | re.DOTALL)
 
@@ -84,11 +84,12 @@ def main(
     #: increase severity of all messages by one level
     strict: bool = yuio.app.field(default=False, usage=yuio.OMIT),
     #: config overrides
-    cfg: Config = yuio.app.field(usage=yuio.OMIT),
+    cfg: Config = yuio.app.field(usage=yuio.OMIT),  # TODO!
 ):
     _GLOBAL_OPTIONS.config_path = config_path
     _GLOBAL_OPTIONS.strict = strict
     _GLOBAL_OPTIONS.file = file
+    _GLOBAL_OPTIONS.cfg = cfg
 
     logging.getLogger("markdown_it").setLevel("WARNING")
 
@@ -112,6 +113,7 @@ main.epilog = """
 - online documentation: https://cl-keeper.readthedocs.io/.
 
 - changelog format: https://keepachangelog.com/
+
 """
 
 
@@ -807,7 +809,7 @@ def pre_commit_check_tag():
 
 
 def _load_config() -> Config:
-    config = Config()
+    config = _GLOBAL_OPTIONS.cfg
     if _GLOBAL_OPTIONS.config_path is None:
         root = _GLOBAL_OPTIONS.file or pathlib.Path.cwd()
         while root:

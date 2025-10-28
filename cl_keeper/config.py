@@ -480,6 +480,12 @@ class GlobalConfig(yuio.config.Config):
 
     """
 
+    cfg: Config = yuio.config.field(usage=yuio.OMIT)
+    """
+    Global config overrides.
+
+    """
+
 
 class Config(yuio.config.Config):
     file: pathlib.Path = yuio.config.field(
@@ -565,10 +571,6 @@ class Config(yuio.config.Config):
     extra_change_categories: dict[str, str] = yuio.app.field(
         default={},
         merge=lambda l, r: {**l, **r},
-        help=(
-            "additional items that will be added to `--cfg-change-categories` "
-            "without completely overriding it"
-        ),
     )
     """
     Additional items that will be added to :attr:`~Config.change_categories`
@@ -583,10 +585,6 @@ class Config(yuio.config.Config):
             "performance",
             "fixed",
         },
-        help=(
-            "if these change categories appear in unreleased section, "
-            "suggest bumping the patch version component."
-        ),
     )
     """
     If these change categories appear in unreleased section, suggest bumping
@@ -601,10 +599,6 @@ class Config(yuio.config.Config):
     extra_bump_patch_categories: set[str] = yuio.app.field(
         default=set(),
         merge=lambda l, r: l | r,
-        help=(
-            "additional items that will be added to `--cfg-bump-patch-categories` "
-            "without completely overriding it"
-        ),
     )
     """
     Additional items that will be added to :attr:`~Config.bump_patch_categories`
@@ -618,10 +612,6 @@ class Config(yuio.config.Config):
             "changed",
             "removed",
         },
-        help=(
-            "if these change categories appear in unreleased section, "
-            "suggest bumping the minor version component."
-        ),
     )
     """
     If these change categories appear in unreleased section, suggest bumping
@@ -636,10 +626,6 @@ class Config(yuio.config.Config):
     extra_bump_minor_categories: set[str] = yuio.app.field(
         default=set(),
         merge=lambda l, r: l | r,
-        help=(
-            "additional items that will be added to `--cfg-bump-minor-categories` "
-            "without completely overriding it"
-        ),
     )
     """
     Additional items that will be added to :attr:`~Config.bump_minor_categories`
@@ -651,10 +637,6 @@ class Config(yuio.config.Config):
         default={
             "breaking",
         },
-        help=(
-            "if these change categories appear in unreleased section, "
-            "suggest bumping the major version component."
-        ),
     )
     """
     If these change categories appear in unreleased section, suggest bumping
@@ -669,10 +651,6 @@ class Config(yuio.config.Config):
     extra_bump_major_categories: set[str] = yuio.app.field(
         default=set(),
         merge=lambda l, r: l | r,
-        help=(
-            "additional items that will be added to `--cfg-bump-major-categories` "
-            "without completely overriding it"
-        ),
     )
     """
     Additional items that will be added to :attr:`~Config.bump_major_categories`
@@ -691,10 +669,6 @@ class Config(yuio.config.Config):
             r"(?im)\bperformance\b": "performance",
             r"(?im)\bfix(ed|es)?\b": "fixed",
         },
-        help=(
-            "a mapping from regular expressions to change category names, "
-            "used to parse and normalize categories"
-        ),
     )
     r"""
     A mapping from regular expressions to change category names, used to parse
@@ -717,10 +691,6 @@ class Config(yuio.config.Config):
     extra_change_categories_map: dict[str, str] = yuio.app.field(
         default={},
         merge=lambda l, r: {**l, **r},
-        help=(
-            "additional items that will be added to `--cfg-change-categories-map` "
-            "without completely overriding it"
-        ),
     )
     """
     Additional items that will be added to :attr:`~Config.change_categories_map`
@@ -806,9 +776,6 @@ class Config(yuio.config.Config):
 
     add_release_link: bool = yuio.app.field(
         default=True,
-        help=(
-            "whether changelog entries should have links to tags/diffs in their headings"
-        ),
     )
     """
     Whether changelog entries should have links to tags/diffs in their headings.
@@ -829,10 +796,6 @@ class Config(yuio.config.Config):
 
     release_link_template: str | None = yuio.app.field(
         default=None,
-        help=(
-            "template for a release link, "
-            "formatted using Python's `str.format` method"
-        ),
     )
     """
     Template for a release link, formatted using Python's :meth:`str.format` method.
@@ -860,10 +823,6 @@ class Config(yuio.config.Config):
 
     release_link_template_last: str | None = yuio.app.field(
         default=None,
-        help=(
-            "template for a link for an unreleased entry, "
-            "formatted using Python's `str.format` method"
-        ),
     )
     """
     Template for a link for an unreleased entry, formatted using
@@ -889,10 +848,6 @@ class Config(yuio.config.Config):
 
     release_link_template_first: str | None = yuio.app.field(
         default=None,
-        help=(
-            "template for a link for the first release, "
-            "formatted using Python's `str.format` method"
-        ),
     )
     """
     Template for a link for the first release, formatted using
@@ -918,7 +873,6 @@ class Config(yuio.config.Config):
 
     release_link_template_vars: dict[str, str] | None = yuio.app.field(
         default=None,
-        help=("additional variables that will be available in release link templates"),
     )
     """
     Additional variables that will be available in release link templates.

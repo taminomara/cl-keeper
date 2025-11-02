@@ -7,13 +7,13 @@ import logging
 import os
 import pathlib
 import re
+import sys
 import tomllib
 import typing as _t
 
 import packaging.version
 import semver
 import yuio.app
-import yuio.complete
 import yuio.git
 import yuio.io
 import yuio.parse
@@ -27,6 +27,7 @@ from cl_keeper.config import (
     PYTHON_PRESET,
     Config,
     GlobalConfig,
+    Input,
     LinkTemplates,
     VersionFormat,
 )
@@ -59,41 +60,22 @@ from cl_keeper.vcs import get_repo_versions
 logger = logging.getLogger(__name__)
 
 
-_GLOBAL_OPTIONS: GlobalConfig = GlobalConfig(cfg=Config())
+_config: Config
+_global_config: GlobalConfig
 
 _COMMENT_RE = re.compile(r"\<\!\-\-.*?(\-\-\>|\Z)", re.MULTILINE | re.DOTALL)
 
 
 @yuio.app.app(version=__version__)
 def main(
-    #: override path to the config file
-    config_path: (
-        _t.Annotated[
-            pathlib.Path,
-            yuio.parse.ExistingPath(extensions=[".toml", ".yaml", ".yml"]),
-        ]
-        | None
-    ) = yuio.app.field(default=None, flags=["-c", "--config"], usage=yuio.OMIT),
-    #: override path to the changelog file
-    file: pathlib.Path | None = yuio.app.field(
-        default=None,
-        flags=["-i", "--input"],
-        completer=yuio.complete.File(extensions=[".md"]),
-        usage=yuio.OMIT,
-    ),
-    #: increase severity of all messages by one level
-    strict: bool = yuio.app.field(default=False, usage=yuio.OMIT),
-    #: config overrides
-    cfg: Config = yuio.app.field(usage=yuio.OMIT),  # TODO!
+    global_config: GlobalConfig = yuio.app.inline(),
 ):
-    _GLOBAL_OPTIONS.config_path = config_path
-    _GLOBAL_OPTIONS.strict = strict
-    _GLOBAL_OPTIONS.file = file
-    _GLOBAL_OPTIONS.cfg = cfg
-
-    logging.getLogger("markdown_it").setLevel("WARNING")
+    global _config, _global_config
 
     logger.debug("changelog keeper version %s", __version__)
+    logging.getLogger("markdown_it").setLevel("WARNING")
+
+    _config, _global_config = _load_config(global_config)
 
 
 main.description = """
@@ -107,7 +89,7 @@ main.epilog = """
 - to get help for a specific subcommand:
 
   ```sh
-  chk <subcommand> --help
+  clk <subcommand> --help
   ```
 
 - online documentation: https://cl-keeper.readthedocs.io/.
@@ -124,20 +106,11 @@ def check():
 
     """
 
-    config = _load_config()
-    file = _locate_changelog(config)
-
-    ctx = Context(
-        file,
-        file.read_text(),
-        config,
-        _GLOBAL_OPTIONS.strict,
-        _make_link_templates(file.parent, config),
-    )
+    ctx = _make_context()
 
     repo_versions = None
     if ctx.config.check_repo_tags:
-        repo_versions = get_repo_versions(file.parent, ctx)
+        repo_versions = get_repo_versions(ctx.root, ctx)
 
     _check(_parse(ctx), ctx, repo_versions)
 
@@ -153,28 +126,19 @@ def fix(
     #: don't save changes, print the diff instead
     dry_run: bool = False,
     #: print diff
-    diff: bool = False,
+    diff: bool | None = None,
 ):
     """
     fix contents of the changelog file.
 
     """
 
-    config = _load_config()
-    file = _locate_changelog(config)
-    original = file.read_text()
-
-    ctx = Context(
-        file,
-        original,
-        config,
-        _GLOBAL_OPTIONS.strict,
-        _make_link_templates(file.parent, config),
-    )
+    ctx = _make_context()
+    original = ctx.src
 
     repo_versions = None
     if ctx.config.check_repo_tags:
-        repo_versions = get_repo_versions(file.parent, ctx)
+        repo_versions = get_repo_versions(ctx.root, ctx)
 
     changelog = _parse(ctx)
     _fix(changelog, ctx, repo_versions)
@@ -191,14 +155,19 @@ def fix(
         yuio.io.success("No issues detected")
     elif not dry_run:
         yuio.io.success("Changelog successfully fixed")
-        file.write_text(result)
+        if ctx.path is Input.STDIN:
+            print(result, end="")
+        else:
+            ctx.path.write_text(result)
 
     if ctx.has_messages():
         yuio.io.heading("Unfixed issues")
         ctx.report()
 
-    if dry_run or diff:
-        _print_diff(original, result, file)
+    if diff is None:
+        diff = dry_run
+    if diff:
+        _print_diff(original, result, ctx.path)
 
 
 class BumpMode(enum.Enum):
@@ -257,12 +226,11 @@ def bump(
             "--alpha, --beta, --rc are not allowed when specifying custom versions"
         )
 
-    config = _load_config()
-    file = _locate_changelog(config)
-    original = file.read_text()
+    ctx = _make_context()
+    original = ctx.src
 
     if commit:
-        repo = yuio.git.Repo(file.parent)
+        repo = yuio.git.Repo(ctx.root)
         status = repo.status()
         if status.cherry_pick_head:
             raise yuio.app.AppError("Can't bump changelog: cherry pick is in progress")
@@ -275,16 +243,8 @@ def bump(
         if not status.branch:
             raise yuio.app.AppError("Can't bump changelog: git head is detached")
 
-    ctx = Context(
-        file,
-        original,
-        config,
-        _GLOBAL_OPTIONS.strict,
-        _make_link_templates(file.parent, config),
-    )
-
-    if isinstance(version, str) and version.startswith(config.tag_prefix):
-        version = version[len(config.tag_prefix) :]
+    if isinstance(version, str) and version.startswith(ctx.config.tag_prefix):
+        version = version[len(ctx.config.tag_prefix) :]
 
     changelog = _parse(ctx)
 
@@ -295,7 +255,7 @@ def bump(
     # new section at position of the first found unreleased section.
     found = None
     to_remove = set()
-    for i, section, _ in _find_sections(FindMode.UNRELEASED, changelog, config):
+    for i, section, _ in _find_sections(FindMode.UNRELEASED, changelog, ctx.config):
         to_remove.add(i)
         if found is None:
             found = section
@@ -314,7 +274,7 @@ def bump(
     # If we didn't find any unreleased sections, insert new section before
     # the first release.
     found_latest = None
-    for i, section, _ in _find_sections(FindMode.LATEST, changelog, config):
+    for i, section, _ in _find_sections(FindMode.LATEST, changelog, ctx.config):
         found_latest = section.as_release()
         if insert_at_pos is None:
             insert_at_pos = max(0, i - 1)
@@ -326,17 +286,17 @@ def bump(
     # Bump version.
     repo_versions = None
     if isinstance(version, BumpMode) or version is None:
-        repo_versions = get_repo_versions(file.parent, ctx)
-        latest_version, _, _ = _find_latest_version(changelog, repo_versions, config)
+        repo_versions = get_repo_versions(ctx.root, ctx)
+        latest_version, _, _ = _find_latest_version(changelog, repo_versions, ctx.config)
         if latest_version is None:
             raise yuio.app.AppError("No previous release to bump")
-        version = _bump_version(latest_version, version, alpha, beta, rc, found, config)
+        version = _bump_version(latest_version, version, alpha, beta, rc, found, ctx.config)
     else:
         if ctx.config.check_repo_tags:
-            repo_versions = get_repo_versions(file.parent, ctx)
+            repo_versions = get_repo_versions(ctx.root, ctx)
 
     parsed_version = _parse_version(version, ctx.config)
-    if parsed_version is None and config.version_format is not VersionFormat.NONE:
+    if parsed_version is None and ctx.config.version_format is not VersionFormat.NONE:
         ctx.issue(
             IssueCode.INVALID_VERSION,
             "New version `%s` doesn't follow %s specification",
@@ -353,7 +313,7 @@ def bump(
         ctx.exit_if_has_errors()
 
     # Ensure we don't create a version that's already present.
-    for _, section, _ in _find_sections(version, changelog, config):
+    for _, section, _ in _find_sections(version, changelog, ctx.config):
         if section.map is not None:
             pos = f" on line `{section.map[0] + 1}`"
         else:
@@ -365,7 +325,7 @@ def bump(
         subsections=found.subsections,
         version=version,
         parsed_version=parsed_version,
-        canonized_version=_canonize_version(parsed_version, config) or version,
+        canonized_version=_canonize_version(parsed_version, ctx.config) or version,
         release_date=datetime.date.today(),
         version_link=None,
         version_label=None,
@@ -407,19 +367,22 @@ def bump(
 
     if not dry_run:
         yuio.io.success("Changelog successfully updated")
-        file.write_text(result)
+        if ctx.path is Input.STDIN:
+            print(result, end="")
+        else:
+            ctx.path.write_text(result)
     else:
-        _print_diff(original, result, file)
+        _print_diff(original, result, ctx.path)
 
     if commit:
         yuio.io.heading("Commit")
     if ctx.has_errors() and commit:
         yuio.io.warning("Not committing changes: errors detected")
         ctx.exit_if_has_errors()
-    tag = f"{config.tag_prefix}{version}"
-    if commit and not dry_run:
-        repo = yuio.git.Repo(file.parent)
-        repo.git("add", str(file))
+    tag = f"{ctx.config.tag_prefix}{version}"
+    if commit and not dry_run and ctx.path is not Input.STDIN:
+        repo = yuio.git.Repo(ctx.root)
+        repo.git("add", str(ctx.path))
         repo.print_status()
         yuio.io.info(
             "You can take a look around and make any changes before proceeding.\n"
@@ -476,7 +439,7 @@ you can always supply a specific version for a new release. As long as there are
 prior releases with the same version, this operation will succeed:
 
 ```sh
-chk bump 1.0.5
+clk bump 1.0.5
 ```
 
 ## automatic version detection
@@ -485,7 +448,7 @@ changelog keeper can suggest next version based on changelog content
 (the `--dry-run` flag is handy here):
 
 ```sh
-chk bump auto
+clk bump auto
 ```
 
 ## bumping a version component
@@ -494,7 +457,7 @@ you can bump a version component by setting `<version>` to `major`, `minor`,
 `patch`, or `post`:
 
 ```sh
-chk bump minor  # 1.0.0 -> 1.1.0
+clk bump minor  # 1.0.0 -> 1.1.0
 ```
 
 ## pre-releases
@@ -502,15 +465,15 @@ chk bump minor  # 1.0.0 -> 1.1.0
 you can make a pre-release by adding `--alpha`, `--beta`, or `--rc`:
 
 ```sh
-chk bump major --beta  # 1.5.1 -> 2.0.0b0
+clk bump major --beta  # 1.5.1 -> 2.0.0b0
 ```
 
 if the last release is a pre-release itself, you can bump its pre-release version
 component:
 
 ```sh
-chk bump --beta  # 1.0.0b0 -> 1.0.0b1
-chk bump --rc  # 1.0.0b0 -> 1.0.0rc0
+clk bump --beta  # 1.0.0b0 -> 1.0.0b1
+clk bump --rc  # 1.0.0b0 -> 1.0.0rc0
 ```
 
 """
@@ -540,24 +503,14 @@ def find(
 
     """
 
-    config = _load_config()
-    file = _locate_changelog(config)
-    original = file.read_text()
+    ctx = _make_context()
 
     if isinstance(version, str):
-        version = version.removeprefix("refs/tags/").removeprefix(config.tag_prefix)
-
-    ctx = Context(
-        file,
-        original,
-        config,
-        _GLOBAL_OPTIONS.strict,
-        _make_link_templates(file.parent, config),
-    )
+        version = version.removeprefix("refs/tags/").removeprefix(ctx.config.tag_prefix)
 
     repo_versions = None
     if ctx.config.check_repo_tags:
-        repo_versions = get_repo_versions(file.parent, ctx)
+        repo_versions = get_repo_versions(ctx.root, ctx)
 
     changelog = _parse(ctx)
 
@@ -570,7 +523,7 @@ def find(
 
     found = None
     found_latest_in_changelog = None
-    for _, section, is_latest in _find_sections(version, changelog, config):
+    for _, section, is_latest in _find_sections(version, changelog, ctx.config):
         if found is None:
             found = section
             found_latest_in_changelog = is_latest
@@ -578,8 +531,8 @@ def find(
             _merge_sections(found, section)
 
     if found is None and isinstance(version, str):
-        parsed_version = _parse_version(version, config)
-        canonized_version = _canonize_version(parsed_version, config) or version
+        parsed_version = _parse_version(version, ctx.config)
+        canonized_version = _canonize_version(parsed_version, ctx.config) or version
 
         lower_bound = ctx.config.parsed_ignore_missing_releases_before
         regex_bound = ctx.config.ignore_missing_releases_regexp
@@ -616,12 +569,12 @@ def find(
                 if repo_versions and (
                     repo_version := repo_versions.get(release.canonized_version)
                 ):
-                    tag = f"{config.tag_prefix}{repo_version.version}"
+                    tag = f"{ctx.config.tag_prefix}{repo_version.version}"
                 is_pre_release = _is_pre_release(release.parsed_version)
                 is_post_release = _is_post_release(release.parsed_version)
                 try:
                     _, _, latest_version_canonized = _find_latest_version(
-                        changelog, repo_versions, config
+                        changelog, repo_versions, ctx.config
                     )
                 except:
                     pass
@@ -643,7 +596,9 @@ def find(
                 "isPostRelease": is_post_release,
                 "isUnreleased": found.is_unreleased(),
             }
-            print(json.dumps(data, indent="  "))
+            yuio.io.hl(
+                json.dumps(data, indent="  ") + "\n", syntax="json", to_stdout=True
+            )
         else:
             print(_render(changelog, ctx, tokens, disable_wrapping=True), end="")
     else:
@@ -662,20 +617,20 @@ find.epilog = """
 find an exact version:
 
 ```sh
-chk find v1.0.0-rc2
+clk find v1.0.0-rc2
 ```
 
 find the first version (barring the `unreleased` section)
 that appears in the changelog:
 
 ```sh
-chk find latest
+clk find latest
 ```
 
 find the `unreleased` section:
 
 ```sh
-chk find unreleased
+clk find unreleased
 ```
 
 # json output:
@@ -749,17 +704,16 @@ def check_tag(
 
     """
 
-    config = _load_config()
     error = False
-    if not tag.startswith(config.tag_prefix):
-        yuio.io.error("Tag `%s` should start with `%r`", tag, config.tag_prefix)
+    if not tag.startswith(_config.tag_prefix):
+        yuio.io.error("Tag `%s` should start with `%r`", tag, _config.tag_prefix)
         error = True
-    parsed = _parse_version(tag.removeprefix(config.tag_prefix), config)
+    parsed = _parse_version(tag.removeprefix(_config.tag_prefix), _config)
     if not parsed:
         yuio.io.error(
             "Tag `%s` does not follow %s specification",
             tag,
-            config.version_format.value,
+            _config.version_format.value,
         )
         error = True
     if error:
@@ -777,12 +731,12 @@ def pre_commit_check(
     and doesn't perform fix if changelog is not updated.
 
     """
-    config = _load_config()
-    file = _locate_changelog(config)
+
+    file = _locate_changelog()
 
     if file not in changed_files and (
-        _GLOBAL_OPTIONS.config_path is None
-        or _GLOBAL_OPTIONS.config_path not in changed_files
+        _global_config.config_path is None
+        or _global_config.config_path not in changed_files
     ):
         return
 
@@ -798,26 +752,29 @@ def pre_commit_check_tag():
     same as `check-tag`, but tag is supplied via `PRE_COMMIT_REMOTE_BRANCH` env var.
 
     """
+
     remote_branch = os.environ.get("PRE_COMMIT_REMOTE_BRANCH")
     if not remote_branch:
         return
-    config = _load_config()
-    prefix = f"refs/tags/{config.tag_prefix}"
+    prefix = f"refs/tags/{_config.tag_prefix}"
     if not remote_branch.startswith(prefix):
         return
     check_tag.command(remote_branch.removeprefix("refs/tags/"))
 
 
-def _load_config() -> Config:
-    config = _GLOBAL_OPTIONS.cfg
-    if _GLOBAL_OPTIONS.config_path is None:
-        root = _GLOBAL_OPTIONS.file or pathlib.Path.cwd()
+def _load_config(global_config: GlobalConfig) -> tuple[Config, GlobalConfig]:
+    config = global_config.cfg
+    if global_config.config_path is None:
+        if global_config.file is Input.STDIN:
+            root = pathlib.Path.cwd()
+        else:
+            root = global_config.file or pathlib.Path.cwd()
         while root:
-            changelog_toml = root.joinpath(".changelog.toml")
+            changelog_toml = root.joinpath(".cl-keeper.toml")
             changelog_toml_exists = changelog_toml.exists()
-            changelog_yaml = root.joinpath(".changelog.yaml")
+            changelog_yaml = root.joinpath(".cl-keeper.yaml")
             changelog_yaml_exists = changelog_yaml.exists()
-            changelog_yml = root.joinpath(".changelog.yml")
+            changelog_yml = root.joinpath(".cl-keeper.yml")
             changelog_yml_exists = changelog_yml.exists()
             pyproject_toml = root.joinpath("pyproject.toml")
             pyproject_toml_exists = pyproject_toml.exists()
@@ -834,92 +791,112 @@ def _load_config() -> Config:
                 )
                 raise yuio.app.AppError(f"Found multiple config files: {found}")
             if changelog_toml_exists:
-                _GLOBAL_OPTIONS.config_path = changelog_toml
+                global_config.config_path = changelog_toml
                 break
             elif changelog_yaml_exists:
-                _GLOBAL_OPTIONS.config_path = changelog_yaml
+                global_config.config_path = changelog_yaml
                 break
             elif changelog_yml_exists:
-                _GLOBAL_OPTIONS.config_path = changelog_yml
+                global_config.config_path = changelog_yml
                 break
             elif pyproject_toml_exists:
-                _GLOBAL_OPTIONS.config_path = pyproject_toml
+                global_config.config_path = pyproject_toml
                 break
             next_root = root.parent
             if next_root == root:
                 break
             root = next_root
-        if _GLOBAL_OPTIONS.config_path is None:
+        if global_config.config_path is None:
             logger.info("using default config")
-            logger.debug("config = %r", config)
-            return config
+            return config.process_config(), global_config
         else:
-            logger.debug("found config %s", _GLOBAL_OPTIONS.config_path)
+            logger.debug("found config %s", global_config.config_path)
     else:
-        logger.debug("loading config %s", _GLOBAL_OPTIONS.config_path)
+        logger.debug("loading config %s", global_config.config_path)
 
-    if not _GLOBAL_OPTIONS.config_path.exists():
+    if not global_config.config_path.exists():
         raise yuio.app.AppError(
-            "Config file <c path>%s</c> doesn't exist", _GLOBAL_OPTIONS.config_path
+            "Config file <c path>%s</c> doesn't exist", global_config.config_path
         )
-    if not _GLOBAL_OPTIONS.config_path.is_file():
+    if not global_config.config_path.is_file():
         raise yuio.app.AppError(
-            "Config path <c path>%s</c> is not a file", _GLOBAL_OPTIONS.config_path
+            "Config path <c path>%s</c> is not a file", global_config.config_path
         )
-    if _GLOBAL_OPTIONS.config_path.name == "pyproject.toml":
+    if global_config.config_path.name == "pyproject.toml":
         config.update(PYTHON_PRESET)
         try:
-            data = tomllib.loads(_GLOBAL_OPTIONS.config_path.read_text())
+            data = tomllib.loads(global_config.config_path.read_text())
         except tomllib.TOMLDecodeError as e:
             yuio.io.warning(
                 "Failed to parse config file <c path>%s</c>: %s",
-                _GLOBAL_OPTIONS.config_path,
+                global_config.config_path,
                 e,
             )
-            logger.debug("config = %r", config)
-            return config
+            return config.process_config(), global_config
         try:
             data = data["tool"]["cl_keeper"]
         except KeyError as e:
             logger.debug(
                 "%s doesn't have section tool.cl_keeper",
-                _GLOBAL_OPTIONS.config_path,
+                global_config.config_path,
             )
-            logger.info("using config from %s", _GLOBAL_OPTIONS.config_path)
-            logger.debug("config = %r", config)
-            return config
+            logger.info("using config from %s", global_config.config_path)
+            return config.process_config(), global_config
 
         config.update(
-            Config.load_from_parsed_file(data, path=_GLOBAL_OPTIONS.config_path)
+            Config.load_from_parsed_file(data, path=global_config.config_path)
         )
-    elif _GLOBAL_OPTIONS.config_path.suffix == ".toml":
-        config.update(Config.load_from_toml_file(_GLOBAL_OPTIONS.config_path))
-    elif _GLOBAL_OPTIONS.config_path.suffix in [".yaml", ".yml"]:
-        config.update(Config.load_from_yaml_file(_GLOBAL_OPTIONS.config_path))
+    elif global_config.config_path.suffix == ".toml":
+        config.update(Config.load_from_toml_file(global_config.config_path))
+    elif global_config.config_path.suffix in [".yaml", ".yml"]:
+        config.update(Config.load_from_yaml_file(global_config.config_path))
     else:
         raise yuio.app.AppError(
             "Unknown config format `%s`: <c path>%s</c>",
-            _GLOBAL_OPTIONS.config_path.suffix,
-            _GLOBAL_OPTIONS.config_path,
+            global_config.config_path.suffix,
+            global_config.config_path,
         )
 
-    logger.info("using config from %s", _GLOBAL_OPTIONS.config_path)
-    logger.debug("config = %r", config)
-    return config
+    logger.info("using config from %s", global_config.config_path)
+    return config.process_config(), global_config
 
 
-def _locate_changelog(config: Config) -> pathlib.Path:
-    if (file := _GLOBAL_OPTIONS.file) is None:
-        if _GLOBAL_OPTIONS.config_path is None:
-            file = config.file
+def _locate_changelog() -> pathlib.Path | Input:
+    if _global_config.file is Input.STDIN:
+        return _global_config.file
+    if (file := _global_config.file) is None:
+        if _global_config.config_path is None:
+            file = _config.file
         else:
-            file = _GLOBAL_OPTIONS.config_path.parent / config.file
+            file = _global_config.config_path.parent / _config.file
     file = file.expanduser().resolve()
     if not file.exists():
         raise yuio.app.AppError("File `%s` doesn't exist", file)
     if not file.is_file():
         raise yuio.app.AppError("Path `%s` is not a file", file)
     return file
+
+
+def _make_context() -> Context:
+    changelog_location = _locate_changelog()
+    if changelog_location is Input.STDIN:
+        src = sys.stdin.read()
+        if _global_config.config_path is not None:
+            root = _global_config.config_path.parent
+        else:
+            root = pathlib.Path.cwd()
+    else:
+        src = changelog_location.read_text()
+        root = changelog_location.parent
+    return Context(
+        changelog_location,
+        root,
+        src,
+        _config,
+        _global_config.strict,
+        _make_link_templates(root, _config),
+        _global_config.machine_readable_diagnostics,
+    )
 
 
 def _make_link_templates(repo_root: pathlib.Path, config: Config) -> LinkTemplates:

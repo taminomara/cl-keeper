@@ -1,15 +1,15 @@
-- id: chk
+- id: clk
   name: changelog keeper
   description: "Keep CHANGELOG.md up-to-date and well formatted"
-  entry: chk pre-commit-check
+  entry: clk pre-commit-check
   language: python
   language_version: "3.13"
   require_serial: true
   types_or: [toml, yaml, markdown]
-- id: chk-tags
+- id: clk-tags
   name: changelog keeper (check tags)
   description: "Check git tags before pushing them"
-  entry: chk pre-commit-check-tag
+  entry: clk pre-commit-check-tag
   language: python
   language_version: "3.13"
   always_run: true

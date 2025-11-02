@@ -1,0 +1,7 @@
+- code: ChangeListOrdering
+  mag: List items are not ordered by preferred order
+  pos:
+  - 3
+  - 4
+  scope: 1
+  severity: 3

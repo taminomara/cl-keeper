@@ -89,29 +89,29 @@ def test_sort(args, expected):
     [
         pytest.param(
             """
-            ## Section
+            ## v1.0.0
             """,
             """
-            ## Section
+            ## v1.0.0
             """,
             id="empty",
         ),
         pytest.param(
             """
-            ## Section
+            ## v1.0.0
 
             content 1
 
-            ## Section 2
+            ## v1.0.2
 
             content 2
 
-            ## Section 3
+            ## v1.0.3
 
             content 3
             """,
             """
-            ## Section
+            ## v1.0.0
 
             content 1
 
@@ -123,7 +123,7 @@ def test_sort(args, expected):
         ),
         pytest.param(
             """
-            ## Section 1
+            ## v1.0.1
 
             content 1.1
 
@@ -135,7 +135,7 @@ def test_sort(args, expected):
 
             sub 1.2
 
-            ## Section 2
+            ## v1.0.2
 
             content 2.1
 
@@ -157,7 +157,7 @@ def test_sort(args, expected):
 
             """,
             """
-            ## Section 1
+            ## v1.0.1
 
             content 1.1
 
@@ -211,7 +211,8 @@ def test_merge_sections(input, expected):
 
     result = parse(ctx)
 
-    assert _remove_map(target.to_tokens()) == _remove_map(result.to_tokens())
+    assert _render(target.to_tokens()) == _render(result.to_tokens())
+    assert _remove_meta(target.to_tokens()) == _remove_meta(result.to_tokens())
 
 
 @pytest.mark.parametrize(
@@ -288,34 +289,64 @@ def test_merge_sections(input, expected):
             """,
             id="list_and_paragraph",
         ),
+        pytest.param(
+            """
+            paragraph
+
+            - content l
+            """,
+            """
+            - content r
+
+            paragraph
+            """,
+            """
+            paragraph
+
+            - content l
+            - content r
+
+            paragraph
+            """,
+            id="list_and_paragraph_merge",
+        ),
     ],
 )
 def test_merge_subsections(a, b, result):
     parser = build_parser()
     left = SubSection(
         content=SyntaxTreeNode(
-            _remove_map(parser.parse(textwrap.dedent(a).strip()))
+            _remove_meta(parser.parse(textwrap.dedent(a).strip()))
         ).children
     )
     right = SubSection(
         content=SyntaxTreeNode(
-            _remove_map(parser.parse(textwrap.dedent(b).strip()))
+            _remove_meta(parser.parse(textwrap.dedent(b).strip()))
         ).children
     )
     result = SubSection(
         content=SyntaxTreeNode(
-            _remove_map(parser.parse(textwrap.dedent(result).strip()))
+            _remove_meta(parser.parse(textwrap.dedent(result).strip()))
         ).children
     )
 
     merge_subsections(left, right)
 
-    assert left.to_tokens() == result.to_tokens()
+    assert _render(left.to_tokens()) == _render(result.to_tokens())
+    assert _remove_meta(left.to_tokens()) == _remove_meta(result.to_tokens())
 
 
-def _remove_map(tokens: list[Token]):
+def _remove_meta(tokens: list[Token]):
     for token in tokens:
         token.map = None
+        for name in list(token.meta):
+            if name.startswith("cl_"):
+                del token.meta[name]
         if token.children:
-            _remove_map(token.children)
+            _remove_meta(token.children)
     return tokens
+
+
+def _render(tokens: list[Token]):
+    parser = build_parser()
+    return parser.renderer.render(tokens, parser.options, {})

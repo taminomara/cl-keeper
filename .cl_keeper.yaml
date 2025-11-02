@@ -1,0 +1,2 @@
+# yaml-language-server: $schema=./docs/build/html/schema.json
+version_format: semver-strict

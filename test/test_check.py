@@ -24,6 +24,18 @@ EXAMPLE_LINK_TEMPLATES = LinkTemplates(
     {},
 )
 
+DEFAULT_ITEM_CATEGORIES_CONFIG = Config(
+    use_default_item_categories=True,
+    add_release_date=False,
+    add_release_link=False,
+    extra_item_categories={
+        "programmed": "",
+    },
+    extra_item_categories_map={
+        r"(?im)programmed": "programmed",
+    },
+).process_config()
+
 
 @pytest.mark.parametrize(
     "input,config,link_templates",
@@ -491,6 +503,298 @@ EXAMPLE_LINK_TEMPLATES = LinkTemplates(
             None,
             None,
             id="duplicate_unreleased",
+        ),
+        pytest.param(
+            """
+            # Changelog
+            ## Some trivia section
+            ### This is an unknown subsection
+            content
+            ### This is an unknown empty subsection
+            ### This is a subsection duplicate
+            content
+            ### This is a subsection duplicate
+            content
+            """,
+            None,
+            None,
+            id="unknown_subsections_in_trivia_sections",
+        ),
+        pytest.param(
+            """
+            # Changelog
+            ## Unreleased
+            - [added] feature
+            """,
+            DEFAULT_ITEM_CATEGORIES_CONFIG,
+            None,
+            id="item_categories_in_unversioned_trivia",
+        ),
+        pytest.param(
+            """
+            # Changelog
+            ## Unreleased
+            - added feature
+            """,
+            DEFAULT_ITEM_CATEGORIES_CONFIG,
+            None,
+            id="item_categories_in_unversioned_trivia_format_error",
+        ),
+        pytest.param(
+            """
+            # Changelog
+            ## Unreleased
+            - programmed a feature
+            """,
+            DEFAULT_ITEM_CATEGORIES_CONFIG,
+            None,
+            id="item_categories_in_unversioned_trivia_no_canonical_format",
+        ),
+        pytest.param(
+            """
+            # Changelog
+            ## Unreleased
+            - [added] feature
+            - [bamboozled] by unknown item category
+            """,
+            DEFAULT_ITEM_CATEGORIES_CONFIG,
+            None,
+            id="item_categories_in_unversioned_trivia_unknown",
+        ),
+        pytest.param(
+            """
+            # Changelog
+            ## Unreleased
+            - [added] feature
+
+            content
+
+            - [added] feature
+            """,
+            DEFAULT_ITEM_CATEGORIES_CONFIG,
+            None,
+            id="item_categories_in_unversioned_trivia_multiple_change_lists",
+        ),
+        pytest.param(
+            """
+            # Changelog
+            ## Unreleased
+            - [changed] something
+            - [added] feature
+            """,
+            DEFAULT_ITEM_CATEGORIES_CONFIG,
+            None,
+            id="item_categories_in_unversioned_trivia_order",
+        ),
+        pytest.param(
+            """
+            # Changelog
+            ## Unreleased
+            ### Added
+            - [added] feature
+            """,
+            DEFAULT_ITEM_CATEGORIES_CONFIG,
+            None,
+            id="item_categories_in_unversioned_sub_section",
+        ),
+        pytest.param(
+            """
+            # Changelog
+            ## Unreleased
+            ### Added
+            - added feature
+            """,
+            DEFAULT_ITEM_CATEGORIES_CONFIG,
+            None,
+            id="item_categories_in_unversioned_sub_section_format_error",
+        ),
+        pytest.param(
+            """
+            # Changelog
+            ## Unreleased
+            ### Added
+            - programmed a feature
+            """,
+            DEFAULT_ITEM_CATEGORIES_CONFIG,
+            None,
+            id="item_categories_in_unversioned_sub_section_no_canonical_format",
+        ),
+        pytest.param(
+            """
+            # Changelog
+            ## Unreleased
+            ### Added
+            - [added] feature
+            - [bamboozled] by unknown item category
+            """,
+            DEFAULT_ITEM_CATEGORIES_CONFIG,
+            None,
+            id="item_categories_in_unversioned_sub_section_unknown",
+        ),
+        pytest.param(
+            """
+            # Changelog
+            ## Unreleased
+            ### Added
+            - [added] feature
+
+            content
+
+            - [added] feature
+            """,
+            DEFAULT_ITEM_CATEGORIES_CONFIG,
+            None,
+            id="item_categories_in_unversioned_sub_section_multiple_change_lists",
+        ),
+        pytest.param(
+            """
+            # Changelog
+            ## Unreleased
+            ### Added
+            - [changed] something
+            - [added] feature
+            """,
+            DEFAULT_ITEM_CATEGORIES_CONFIG,
+            None,
+            id="item_categories_in_unversioned_sub_section_order",
+        ),
+        pytest.param(
+            """
+            # Changelog
+            ## 1.0.0
+            - [added] feature
+            """,
+            DEFAULT_ITEM_CATEGORIES_CONFIG,
+            None,
+            id="item_categories_in_release_trivia",
+        ),
+        pytest.param(
+            """
+            # Changelog
+            ## 1.0.0
+            - added feature
+            """,
+            DEFAULT_ITEM_CATEGORIES_CONFIG,
+            None,
+            id="item_categories_in_release_trivia_format_error",
+        ),
+        pytest.param(
+            """
+            # Changelog
+            ## 1.0.0
+            - programmed a feature
+            """,
+            DEFAULT_ITEM_CATEGORIES_CONFIG,
+            None,
+            id="item_categories_in_release_trivia_no_canonical_format",
+        ),
+        pytest.param(
+            """
+            # Changelog
+            ## 1.0.0
+            - [added] feature
+            - [bamboozled] by unknown item category
+            """,
+            DEFAULT_ITEM_CATEGORIES_CONFIG,
+            None,
+            id="item_categories_in_release_trivia_unknown",
+        ),
+        pytest.param(
+            """
+            # Changelog
+            ## 1.0.0
+            - [added] feature
+
+            content
+
+            - [added] feature
+            """,
+            DEFAULT_ITEM_CATEGORIES_CONFIG,
+            None,
+            id="item_categories_in_release_trivia_multiple_change_lists",
+        ),
+        pytest.param(
+            """
+            # Changelog
+            ## 1.0.0
+            - [changed] something
+            - [added] feature
+            """,
+            DEFAULT_ITEM_CATEGORIES_CONFIG,
+            None,
+            id="item_categories_in_release_trivia_order",
+        ),
+        pytest.param(
+            """
+            # Changelog
+            ## 1.0.0
+            ### Added
+            - [added] feature
+            """,
+            DEFAULT_ITEM_CATEGORIES_CONFIG,
+            None,
+            id="item_categories_in_release_sub_section",
+        ),
+        pytest.param(
+            """
+            # Changelog
+            ## 1.0.0
+            ### Added
+            - added feature
+            """,
+            DEFAULT_ITEM_CATEGORIES_CONFIG,
+            None,
+            id="item_categories_in_release_sub_section_format_error",
+        ),
+        pytest.param(
+            """
+            # Changelog
+            ## 1.0.0
+            ### Added
+            - programmed a feature
+            """,
+            DEFAULT_ITEM_CATEGORIES_CONFIG,
+            None,
+            id="item_categories_in_release_sub_section_no_canonical_format",
+        ),
+        pytest.param(
+            """
+            # Changelog
+            ## 1.0.0
+            ### Added
+            - [added] feature
+            - [bamboozled] by unknown item category
+            """,
+            DEFAULT_ITEM_CATEGORIES_CONFIG,
+            None,
+            id="item_categories_in_release_sub_section_unknown",
+        ),
+        pytest.param(
+            """
+            # Changelog
+            ## 1.0.0
+            ### Added
+            - [added] feature
+
+            content
+
+            - [added] feature
+            """,
+            DEFAULT_ITEM_CATEGORIES_CONFIG,
+            None,
+            id="item_categories_in_release_sub_section_multiple_change_lists",
+        ),
+        pytest.param(
+            """
+            # Changelog
+            ## 1.0.0
+            ### Added
+            - [changed] something
+            - [added] feature
+            """,
+            DEFAULT_ITEM_CATEGORIES_CONFIG,
+            None,
+            id="item_categories_in_release_sub_section_order",
         ),
     ],
 )

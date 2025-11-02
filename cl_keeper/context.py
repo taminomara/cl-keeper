@@ -6,7 +6,7 @@ import typing as _t
 
 import yuio.io
 
-from cl_keeper.config import Config, IssueCode, IssueSeverity, LinkTemplates
+from cl_keeper.config import Config, Input, IssueCode, IssueSeverity, LinkTemplates
 from cl_keeper.typing import SupportsPos
 
 
@@ -31,18 +31,22 @@ IssuePosition: _t.TypeAlias = tuple[int, int]
 class Context:
     def __init__(
         self,
-        path: pathlib.Path,
+        path: pathlib.Path | Input,
+        root: pathlib.Path,
         src: str,
         config: Config,
         strict: bool,
         link_templates: LinkTemplates,
+        machine_readable_diagnostics: bool,
     ) -> None:
         self.path = path
+        self.root = root
         self.src = src
         self.lines = self.src.splitlines()
         self.config = config
         self.strict = strict
         self.link_templates = link_templates
+        self.machine_readable_diagnostics = machine_readable_diagnostics
         self._has_errors = False
         self._messages: list[
             tuple[
@@ -82,7 +86,12 @@ class Context:
         self._messages.append((msg, args, pos, code, scope, severity))
 
     def report(self):
-        self._messages.sort(key=lambda x: (x[3].value, -x[4].value, x[2] or (0, 0)))
+        self._messages.sort(key=lambda x: (x[4].value, -x[5].value, x[2] or (0, 0)))
+
+        if self.machine_readable_diagnostics:
+            self._print_machine_readable()
+            return
+
         prev_pos = None
         prev_title = None
         for i, (msg, args, pos, code, _, severity) in enumerate(self._messages):
@@ -121,6 +130,19 @@ class Context:
     def exit_if_has_errors(self):
         if self.has_errors():
             exit(3)
+
+    def _print_machine_readable(self):
+        path = self.path
+        if path is Input.STDIN:
+            path = path.name
+        for (msg, args, pos, code, _, severity) in self._messages:
+            if args:
+                msg %= args
+            if pos:
+                pos = pos[0] + 1
+            else:
+                pos = ""
+            print(f"{path}:{pos}:{severity.name}:{code.value}:{msg.replace('\n', ' ')}")
 
     def _print_source(self, pos: tuple[int, int] | None):
         if pos:

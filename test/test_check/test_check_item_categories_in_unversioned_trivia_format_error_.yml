@@ -1,0 +1,7 @@
+- code: ChangeListItemFormat
+  mag: List item is not properly formatted, should start with `'[added] '`
+  pos:
+  - 2
+  - 3
+  scope: 1
+  severity: 3

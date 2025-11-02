@@ -2,10 +2,9 @@ import difflib
 import pathlib
 
 import yuio.io
-import yuio.md
 from markdown_it.token import Token
 
-from cl_keeper.config import Wrapping
+from cl_keeper.config import Input, Wrapping
 from cl_keeper.context import Context
 from cl_keeper.model import Changelog
 
@@ -30,24 +29,26 @@ def render(
     return parser.render(rendered)
 
 
-def print_diff(l: str, r: str, path: pathlib.Path):
+def print_diff(l: str, r: str, path: pathlib.Path | Input | str):
+    if path is Input.STDIN:
+        fromfile = "stdin"
+        tofile = "stdout"
+    else:
+        fromfile=f"{path}:before"
+        tofile=f"{path}:after"
+
     diff = "".join(
         difflib.unified_diff(
             l.splitlines(keepends=True),
             r.splitlines(keepends=True),
-            fromfile=f"{path}:before",
-            tofile=f"{path}:after",
+            fromfile=fromfile,
+            tofile=tofile,
         )
     )
 
     yuio.io.heading("Diff")
 
     if not diff:
-        yuio.io.info("Diff is empty")
+        yuio.io.success("Diff is empty")
     else:
-        yuio.io.raw(
-            yuio.md.SyntaxHighlighter.get_highlighter("diff").highlight(
-                yuio.io.get_theme(),
-                diff,
-            )
-        )
+        yuio.io.hl(diff, syntax="diff")

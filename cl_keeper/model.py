@@ -207,3 +207,6 @@ class SubSection:
     def walk(self):
         for node in self.content:
             yield from node.walk()
+
+    def what(self) -> str:
+        return f"Sub-section ``` {self.category} ```"

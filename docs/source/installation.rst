@@ -49,9 +49,9 @@ You can download pre-compiled binaries from the releases_ page.
 Setting up autocompletion
 -------------------------
 
-Changelog keeper comes with pre-completion scripts for bash, zsh and fish. To install
-them, simply run:
+Changelog keeper comes with pre-completion scripts for Bash, Zsh, Fish, and PowerShell.
+To install them, simply run:
 
 .. code-block:: console
 
-    chk --completions
+    clk --completions

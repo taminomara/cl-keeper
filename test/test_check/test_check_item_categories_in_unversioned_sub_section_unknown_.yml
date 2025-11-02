@@ -1,0 +1,7 @@
+- code: UnknownItemCategory
+  mag: Can't detect change category for list item
+  pos:
+  - 4
+  - 5
+  scope: 1
+  severity: 3

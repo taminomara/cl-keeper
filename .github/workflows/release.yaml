@@ -88,12 +88,12 @@ jobs:
           script-name: cl_keeper
           mode: onefile
           deployment: true
-          output-file: chk-${{ runner.os }}-${{ runner.arch }}${{ runner.os == 'windows-latest' && '.exe' || '' }}
+          output-file: clk-${{ runner.os }}-${{ runner.arch }}${{ runner.os == 'windows-latest' && '.exe' || '' }}
       - name: Upload the build artifact
         uses: actions/upload-artifact@v4
         with:
           name: build-${{ runner.os }}-${{ runner.arch }}
-          path: build/chk-*
+          path: build/clk-*
           include-hidden-files: true
 
   publish_to_pypi:

@@ -1,0 +1,17 @@
+messages:
+- code: MultipleChangeLists
+  mag: Found multiple change lists in the same change category
+  pos:
+  - 6
+  - 7
+  scope: 1
+  severity: 3
+sections:
+- subsections:
+  - category: added
+    category_kind: KNOWN
+    sort_key: 2
+    type: CHANGES
+  type: UNRELEASED
+  version_label: null
+  version_link: null

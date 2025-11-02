@@ -10,9 +10,12 @@ from cl_keeper.model import (
     ReleaseSection,
     RepoVersion,
     Section,
+    SubSection,
+    SubSectionCategoryKind,
     SubSectionType,
     UnreleasedSection,
 )
+from markdown_it.tree import SyntaxTreeNode
 
 
 def check(
@@ -24,6 +27,7 @@ def check(
     found_unordered_sections, found_unordered_unreleased = check_order(
         changelog.sections, ctx
     )
+    check_items(changelog.sections, ctx)
     check_links(
         changelog.sections,
         repo_versions,
@@ -79,7 +83,7 @@ def check_duplicates_in_subsections(section: Section, ctx: Context):
                 if subsection.category in seen_categories:
                     ctx.issue(
                         IssueCode.DUPLICATE_CHANGE_CATEGORIES,
-                        f"Found multiple sub-sections for `%s` category in {section.what()}",
+                        f"Found multiple sub-sections for change category `%s` in {section.what()}",
                         subsection.category,
                         pos=subsection,
                     )
@@ -137,24 +141,95 @@ def check_order(sections: list[Section], ctx: Context):
 
 def check_order_in_subsection(section: Section, ctx: Context):
     last_sort_key = None
+    emitted_unordered_warning = False
     for subsection in section.subsections:
         match subsection.type:
             case SubSectionType.TRIVIA:
-                continue
+                if subsection.heading is None:
+                    check_order_in_item_lists(subsection.content, ctx)
             case SubSectionType.CHANGES:
                 if (
                     last_sort_key is not None
+                    and not emitted_unordered_warning
                     and subsection.sort_key is not None
                     and last_sort_key > subsection.sort_key
                 ):
                     ctx.issue(
                         IssueCode.CHANGE_CATEGORY_ORDERING,
-                        f"Sub-sections in {section.what()} are not ordered by preferred order",
+                        f"Change categories in {section.what()} are not ordered by preferred order",
                         pos=subsection,
                     )
-                    return
+                    emitted_unordered_warning = True
                 elif subsection.sort_key is not None:
                     last_sort_key = subsection.sort_key
+                check_order_in_item_lists(subsection.content, ctx)
+
+
+def check_order_in_item_lists(items: list[SyntaxTreeNode], ctx: Context):
+    if not ctx.config.full_item_categories:
+        return
+    for item in items:
+        if not item.meta.get("cl_is_changelist"):
+            continue
+        else:
+            check_order_in_items(item.children, ctx)
+
+
+def check_order_in_items(items: list[SyntaxTreeNode], ctx: Context):
+    last_sort_key = None
+    for item in items:
+        if (sort_key := item.meta.get("cl_sort_key")) is not None:
+            if last_sort_key is not None and last_sort_key > sort_key:
+                ctx.issue(
+                    IssueCode.CHANGE_LIST_ORDERING,
+                    f"List items are not ordered by preferred order",
+                    pos=item,
+                )
+                return
+            last_sort_key = sort_key
+
+
+def check_items(sections: list[Section], ctx: Context):
+    for section in sections:
+        if not section.is_release() and not section.is_unreleased():
+            continue
+        for subsection in section.subsections:
+            if (
+                subsection.type is SubSectionType.TRIVIA and subsection.heading is None
+            ) or subsection.category_kind is SubSectionCategoryKind.KNOWN:
+                check_headings_in_item_lists(subsection.content, ctx)
+
+
+def check_headings_in_item_lists(items: list[SyntaxTreeNode], ctx: Context):
+    if not ctx.config.full_item_categories:
+        return
+    for changelist in items:
+        if not changelist.meta.get("cl_is_changelist"):
+            continue
+        for item in changelist:
+            check_item_heading(item, ctx)
+
+
+def check_item_heading(item: SyntaxTreeNode, ctx: Context):
+    category = item.meta.get("cl_category")
+    if not category:
+        ctx.issue(
+            IssueCode.UNKNOWN_ITEM_CATEGORY,
+            "Can't detect change category for list item",
+            pos=item,
+        )
+        return
+    text: str = item.meta["cl_text"]
+    prefix = ctx.config.full_item_categories.get(category)
+    if not prefix:
+        return
+    if not text.startswith(prefix):
+        ctx.issue(
+            IssueCode.CHANGE_LIST_ITEM_FORMAT,
+            "List item is not properly formatted, should start with `%r`",
+            prefix,
+            pos=item,
+        )
 
 
 def check_links(
@@ -314,6 +389,23 @@ def check_section_content(sections: list[Section], ctx: Context):
                         pos=section,
                     )
                     break
+
+
+# def _check_category_contains_change_items(
+#     section: Section | SubSection, items: list[SyntaxTreeNode], ctx: Context
+# ):
+#     if not items:
+#         # Empty categories are detected separately.
+#         return
+#     for changelist in items:
+#         if changelist.meta.get("cl_is_changelist"):
+#             return
+#     ctx.issue(
+#         IssueCode.CHANGE_CATEGORY_HAS_NO_CHANGE_LISTS,
+#         f"There are no change lists in {section.what()}",
+#         pos=section,
+#     )
+#     return
 
 
 def check_tags(

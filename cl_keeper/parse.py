@@ -104,15 +104,16 @@ def build_changelog(root: SyntaxTreeNode, ctx: Context) -> list[Section]:
 
     sections: list[Section] = []
     for heading, content in split_into_sections(root.children, 2):
-        subsections: list[SubSection] = []
+        section = create_section(heading, [], ctx)
         if not heading:
-            subsections.append(SubSection(content=content))
+            section.subsections.append(SubSection(content=content))
         else:
             for subheading, content in split_into_sections(content, 3):
                 subsection = SubSection(heading=subheading, content=content)
-                detect_subsection_metadata(subsection, ctx)
-                subsections.append(subsection)
-        sections.append(create_section(heading, subsections, ctx))
+                if section.is_release() or section.is_unreleased():
+                    detect_subsection_metadata(subsection, ctx)
+                section.subsections.append(subsection)
+        sections.append(section)
     return sections
 
 
@@ -356,9 +357,17 @@ def detect_subsection_metadata(subsection: SubSection, ctx: Context):
         subsection.category_kind = SubSectionCategoryKind.UNKNOWN
         subsection.category = ""
         subsection.sort_key = None
+        if subsection.heading is None and ctx.config.full_item_categories:
+            # This is a trivia section at the start of a section --
+            # search for items in it as well.
+            detect_items_metadata(subsection.content, ctx)
         return
 
     for regex, category in ctx.config.full_change_categories_map.items():
+        if category not in ctx.config.full_change_categories:
+            # This category was removed from config, there's still a mapping for it
+            # inherited from default values.
+            continue
         if re.search(regex, heading):
             subsection.type = SubSectionType.CHANGES
             subsection.category_kind = SubSectionCategoryKind.KNOWN
@@ -373,6 +382,9 @@ def detect_subsection_metadata(subsection: SubSection, ctx: Context):
                     canonical_heading,
                     pos=subsection.heading,
                 )
+
+            if ctx.config.full_item_categories:
+                detect_items_metadata(subsection.content, ctx)
 
             return
 
@@ -389,6 +401,43 @@ def detect_subsection_metadata(subsection: SubSection, ctx: Context):
         heading,
         pos=subsection.heading,
     )
+
+
+def detect_items_metadata(nodes: list[SyntaxTreeNode], ctx: Context):
+    seen_changelist = False
+    for node in nodes:
+        is_changelist = False
+        if node.type == "bullet_list":
+            for child in node.children:
+                detect_item_metadata(child, ctx)
+                is_changelist = (
+                    is_changelist or child.meta["cl_category"] is not None
+                )
+            if is_changelist:
+                if seen_changelist:
+                    ctx.issue(
+                        IssueCode.MULTIPLE_CHANGE_LISTS,
+                        "Found multiple change lists in the same change category",
+                        pos=node,
+                    )
+                seen_changelist = True
+        node.meta["cl_is_changelist"] = is_changelist
+
+
+def detect_item_metadata(node: SyntaxTreeNode, ctx: Context):
+    text = _node_to_text(node)
+    assert text is not None
+    for regex, category in ctx.config.full_item_categories_map.items():
+        if category not in ctx.config.full_item_categories:
+            # This category was removed from config, there's still a mapping for it
+            # inherited from default values.
+            continue
+        if re.search(regex, text):
+            node.meta["cl_category"] = category
+            node.meta["cl_sort_key"] = ctx.config.item_categories_sort_keys.get(category)
+            node.meta["cl_text"] = text
+            return
+    node.meta["cl_category"] = None
 
 
 def _node_to_text(heading: SyntaxTreeNode | None):

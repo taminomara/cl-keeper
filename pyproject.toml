@@ -27,7 +27,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "yuio>=2.0.0.rc1,<3.0",
+    "yuio>=2.0.0.rc0,<3.0",
     "giturlparse==0.12.0",
     "markdown-it-py==3.0.0",
     "mdformat==0.7.22",
@@ -44,6 +44,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pytest-cov==7.0.0",
+    "sphinx-autobuild==2025.8.25",
     {include-group = "test"},
     {include-group = "lint"},
     {include-group = "doc"},
@@ -75,7 +76,7 @@ Changelog = "https://github.com/taminomara/cl-keeper/blob/main/CHANGELOG.md"
 include = ["cl_keeper"]
 
 [project.scripts]
-chk = "cl_keeper.__main__:main.run"
+clk = "cl_keeper.__main__:main.run"
 
 [build-system]
 requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2", "wheel>=0.40"]
@@ -106,6 +107,3 @@ reportUnnecessaryTypeIgnoreComment = "warning"
 [tool.isort]
 profile = "black"
 skip_gitignore = true
-
-[tool.cl_keeper]
-version_format = "python-semver"

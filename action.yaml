@@ -32,22 +32,22 @@ inputs:
 outputs:
   text:
     description: Extracted markdown text.
-    value: ${{ fromJSON(steps.run-chk.outputs.data).text }}
+    value: ${{ fromJSON(steps.run-clk.outputs.data).text }}
   is-latest:
     description: Indicates that this is the latest release so far.
-    value: ${{ fromJSON(steps.run-chk.outputs.data).isLatest }}
+    value: ${{ fromJSON(steps.run-clk.outputs.data).isLatest }}
   is-pre-release:
     description: Indicates that this is a pre-release.
-    value: ${{ fromJSON(steps.run-chk.outputs.data).isPreRelease }}
+    value: ${{ fromJSON(steps.run-clk.outputs.data).isPreRelease }}
   is-post-release:
     description: Indicates that this is a post-release.
-    value: ${{ fromJSON(steps.run-chk.outputs.data).isPostRelease }}
+    value: ${{ fromJSON(steps.run-clk.outputs.data).isPostRelease }}
   is-unreleased:
     description: Indicates that action returned an unreleased section of changelog.
-    value: ${{ fromJSON(steps.run-chk.outputs.data).isUnreleased }}
+    value: ${{ fromJSON(steps.run-clk.outputs.data).isUnreleased }}
   data:
-    description: Full JSON output of the "chk find" command.
-    value: ${{ steps.run-chk.outputs.data }}
+    description: Full JSON output of the "clk find" command.
+    value: ${{ steps.run-clk.outputs.data }}
 
 runs:
   using: composite
@@ -57,11 +57,11 @@ runs:
       with:
         packages: ${{ github.action_path }}
     - name: Run Changelog Keeper
-      id: run-chk
+      id: run-clk
       shell: bash
       run: |
         echo 'data<<EOF' >> $GITHUB_OUTPUT
-        chk find ${{ inputs.version }} --json $FLAG_CONFIG $FLAG_CHANGELOG $FLAG_STRICT $FLAG_IGNORE_ERRORS >> $GITHUB_OUTPUT
+        clk find ${{ inputs.version }} --json $FLAG_CONFIG $FLAG_CHANGELOG $FLAG_STRICT $FLAG_IGNORE_ERRORS >> $GITHUB_OUTPUT
         echo 'EOF' >> $GITHUB_OUTPUT
       env:
         FLAG_CONFIG: ${{ inputs.config != '' && format('-c {0}', inputs.config) || '' }}

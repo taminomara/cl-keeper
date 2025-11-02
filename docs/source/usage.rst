@@ -3,18 +3,18 @@ Usage
 
 .. currentmodule:: cl_keeper.config
 
-Changelog Keeper's command is called  :program:`chk`. It comes with four main subcommands:
+Changelog Keeper's command is called  :program:`clk`. It comes with four main subcommands:
 
-**chk check**
+**clk check**
     checks contents of the changelog file.
 
-**chk fix**
+**clk fix**
     fixes contents of the changelog file.
 
-**chk bump**
+**clk bump**
     moves entries from the ``unreleased`` section to a new release.
 
-**chk find**
+**clk find**
     searches a changelog entry for the given release version.
 
 All of them accept a few universal flags:
@@ -22,8 +22,8 @@ All of them accept a few universal flags:
 -c <file>, --config <file>
     Overrides path to the config file.
 
-    By default, Changelog Keeper searches for ``.changelog.yaml``,
-    ``.changelog.toml``, or ``pyproject.toml`` in the current directory
+    By default, Changelog Keeper searches for ``.cl-keeper.yaml``,
+    ``.cl-keeper.toml``, or ``pyproject.toml`` in the current directory
     or its parents.
 
     If :flag:`--input` is given, Changelog Keeper searches for config starting from the
@@ -52,7 +52,7 @@ Check
 
 .. code-block:: console
 
-    $ chk check [<options>]
+    $ clk check [<options>]
 
 -   Checks changelog for any issues. Issue severities can be controlled by the
     :attr:`~Config.severity` config option.
@@ -63,7 +63,7 @@ Fix
 
 .. code-block:: console
 
-    $ chk fix [<options>]
+    $ clk fix [<options>]
 
 -   Checks changelog for any issues, and fixes whichever issues it can. Issue
     severities can be controlled by the :attr:`~Config.severity` config option.
@@ -81,8 +81,8 @@ Bump
 
 .. code-block:: console
 
-    $ chk bump [<options>] [--ignore-errors] [--dry-run] [--edit] [--commit] <version>
-    $ chk bump [<options>] [--ignore-errors] [--dry-run] [--edit] [--commit] [auto|major|minor|patch|post] [--alpha|--beta|--rc]
+    $ clk bump [<options>] [--ignore-errors] [--dry-run] [--edit] [--commit] <version>
+    $ clk bump [<options>] [--ignore-errors] [--dry-run] [--edit] [--commit] [auto|major|minor|patch|post] [--alpha|--beta|--rc]
 
 -   First form moves entries from the ``unreleased`` section to a new release
     for the specific version.
@@ -141,31 +141,31 @@ Create release ``1.0.5``:
 
 .. code-block:: console
 
-    $ chk bump 1.0.5
+    $ clk bump 1.0.5
 
 Determine new version automatically:
 
 .. code-block:: console
 
-    $ chk bump auto
+    $ clk bump auto
 
 Create a new minor release, i.e. ``1.0.0`` → ``1.1.0``:
 
 .. code-block:: console
 
-    $ chk bump minor
+    $ clk bump minor
 
 Create a beta pre-release for a major release, i.e. ``1.5.1`` → ``2.0.0-beta0``:
 
 .. code-block:: console
 
-    $ chk bump major --beta
+    $ clk bump major --beta
 
 Bump last pre-release:
 
 .. code-block:: console
 
-    $ chk bump --beta
+    $ clk bump --beta
 
 Examples of pre-release bumping:
 
@@ -180,9 +180,9 @@ Find
 
 .. code-block:: console
 
-    $ chk find [<options>] [--ignore-errors] [--json] <version>
-    $ chk find [<options>] [--ignore-errors] [--json] unreleased
-    $ chk find [<options>] [--ignore-errors] [--json] latest
+    $ clk find [<options>] [--ignore-errors] [--json] <version>
+    $ clk find [<options>] [--ignore-errors] [--json] unreleased
+    $ clk find [<options>] [--ignore-errors] [--json] latest
 
 -   First form prints a changelog entry for the given release version.
 -   Second form prints contents of the unreleased section.

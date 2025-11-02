@@ -4,6 +4,7 @@ import typing as _t
 
 from cl_keeper.model import Section, SubSection
 from cl_keeper.typing import Ord
+from markdown_it.tree import SyntaxTreeNode
 
 
 def sorted_sections(sections: _t.Iterable[Section]) -> list[Section]:
@@ -22,6 +23,15 @@ def sorted_subsections(subsections: _t.Iterable[SubSection]):
     """
 
     return sorted_by_key(subsections, lambda s: s.sort_key)
+
+
+def sorted_items(items: _t.Iterable[SyntaxTreeNode]):
+    """
+    Sort list items by their preferred order.
+
+    """
+
+    return sorted_by_key(items, lambda s: s.meta.get("cl_sort_key"))
 
 
 def _sections_key(section: Section):
@@ -115,11 +125,15 @@ def merge_subsections(lhs: SubSection, rhs: SubSection):
     """
 
     if (
-        len(lhs.content) == 1
-        and len(rhs.content) == 1
-        and lhs.content[0].type in ["bullet_list", "ordered_list"]
-        and rhs.content[0].type == lhs.content[0].type
+        lhs.content
+        and rhs.content
+        and lhs.content[-1].type in ["bullet_list", "ordered_list"]
+        and rhs.content[0].type == lhs.content[-1].type
     ):
-        lhs.content[0].children += rhs.content[0].children
+        lhs.content[-1].children += rhs.content[0].children
+        lhs.content[-1].meta["cl_is_changelist"] = lhs.content[-1].meta.get(
+            "cl_is_changelist", False
+        ) or rhs.content[0].meta.get("cl_is_changelist", False)
+        lhs.content += rhs.content[1:]
     else:
         lhs.content += rhs.content

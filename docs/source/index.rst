@@ -16,7 +16,7 @@ Features
 -  Changelog Keeper uses a full-fledged Markdown parser, thus minimizing chances
    of mis-parses.
 
--  Flexible configuration with ``.changelog.yaml`` allows working with multitude
+-  Flexible configuration with ``.cl-keeper.yaml`` allows working with multitude
    of changelog styles and versioning schemas.
 
 -  Analyzing project releases by inspecting git tags.

@@ -18,20 +18,20 @@ to your ``.pre-commit-config.yaml``:
     - repo: https://github.com/taminomara/cl-keeper
       rev: v1
       hooks:
-        - id: chk
-        - id: chk-tags
+        - id: clk
+        - id: clk-tags
 
 There are two hooks available:
 
-**chk**
-    runs :flag:`chk fix` on your repository.
+**clk**
+    runs :flag:`clk fix` on your repository.
 
-**chk-tags**
-    runs :flag:`chk check-tag` before push to check whether pushed tags conform to the selected
+**clk-tags**
+    runs :flag:`clk check-tag` before push to check whether pushed tags conform to the selected
     :attr:`~Config.version_format`.
 
     Note that there is no guarantee that this hook will catch all push attempts;
-    it's best to run :flag:`chk check-tag` in CI as well.
+    it's best to run :flag:`clk check-tag` in CI as well.
 
 
 .. _ci-usage:
@@ -53,6 +53,8 @@ Here's an example of using ``taminomara/cl-keeper@v1`` in combination with
             - 'v*'
     jobs:
       release:
+        - name: Checkout source
+          uses: actions/checkout@v4
         - id: changelog
           name: Parse Changelog
           uses: taminomara/cl-keeper@v1
@@ -67,6 +69,18 @@ Here's an example of using ``taminomara/cl-keeper@v1`` in combination with
               ## Changelog
 
               ${{ steps.changelog.outputs.text }}
+
+.. note::
+
+    If you're running action in strict mode, you may need to enable full history fetch
+    in order to validate git tags. Use ``fetch-depth`` for this:
+
+    .. code-block:: yaml
+
+        - name: Checkout source
+          uses: actions/checkout@v4
+          with:
+            fetch-depth: 0
 
 .. list-table:: Inputs
     :header-rows: 1
@@ -125,7 +139,49 @@ Here's an example of using ``taminomara/cl-keeper@v1`` in combination with
       - Indicates that action returned an unreleased section of changelog.
     * - ``data``
       - ``object``\ [1]_
-      - Full JSON output of the "chk find" command.
+      - Full JSON output of the "clk find" command.
 
 .. [1] GitHub actions encode all non-string outputs as JSON. Make sure to use
        ``fromJSON`` function on it.
+
+
+Running Changelog Keeper from VSCode
+------------------------------------
+
+You can configure VSCode to run :flag:`clk fix` on the current file:
+
+1.  Open :guilabel:`Tasks: Open User Tasks`.
+
+2.  Add the following task:
+
+    .. code-block:: json
+
+        {
+          "label": "clk",
+          "type": "shell",
+          "command": "clk fix -i '${file}' -m",
+          "problemMatcher": {
+            "fileLocation": "absolute",
+            "source": "clk",
+            "owner": "changelog-keeper",
+            "applyTo": "allDocuments",
+            "pattern": {
+              "regexp": "^(.*):(\\d*):([a-zA-Z0-9 ]*):([a-zA-Z0-9 ]*):(.*)$",
+              "file": 1,
+              "line": 2,
+              "severity": 3,
+              "code": 4,
+              "message": 5
+            }
+          },
+          "presentation": {
+            "echo": true,
+            "reveal": "never",
+            "focus": false,
+            "panel": "shared",
+            "showReuseMessage": true,
+            "clear": false
+          }
+        }
+
+3.  Now you can run :flag:`clk fix` using :guilabel:`Tasks: Run Task` command.

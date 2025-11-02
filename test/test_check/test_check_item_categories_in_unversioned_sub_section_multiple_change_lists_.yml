@@ -1,0 +1,7 @@
+- code: MultipleChangeLists
+  mag: Found multiple change lists in the same change category
+  pos:
+  - 7
+  - 8
+  scope: 1
+  severity: 3

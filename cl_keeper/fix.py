@@ -1,3 +1,4 @@
+import re
 from markdown_it.token import Token
 from markdown_it.tree import SyntaxTreeNode
 
@@ -12,7 +13,7 @@ from cl_keeper.model import (
     SubSectionType,
     UnreleasedSection,
 )
-from cl_keeper.sort import sorted_sections, sorted_subsections
+from cl_keeper.sort import sorted_items, sorted_sections, sorted_subsections
 
 
 def fix(
@@ -74,6 +75,88 @@ def fix(
                 heading := ctx.config.full_change_categories[subsection.category]
             ):
                 subsection.heading = format_heading(heading, 3)
+            if ctx.config.full_item_categories:
+                merge_changelists_in_subsection(subsection.content)
+                for changelist in subsection.content:
+                    if not changelist.meta.get("cl_is_changelist"):
+                        continue
+                    changelist.children = sorted_items(changelist.children)
+                fix_headings_in_changelists(subsection.content, ctx)
+
+
+def merge_changelists_in_subsection(content: list[SyntaxTreeNode]):
+    first_list = None
+    for changelist in content:
+        if not changelist.meta.get("cl_is_changelist"):
+            continue
+        if first_list is not None:
+            first_list.children += changelist.children
+            changelist.children.clear()
+        else:
+            first_list = changelist
+    if first_list:
+        content = [
+            changelist
+            for changelist in content
+            if (not changelist.meta.get("cl_is_changelist") or changelist is first_list)
+        ]
+
+
+def fix_headings_in_changelists(content: list[SyntaxTreeNode], ctx: Context):
+    for changelist in content:
+        if not changelist.meta.get("cl_is_changelist"):
+            continue
+        for item in changelist.children:
+            fix_item_heading(item, ctx)
+
+
+def fix_item_heading(item: SyntaxTreeNode, ctx: Context):
+    category = item.meta.get("cl_category")
+    if not category:
+        return
+    text: str = item.meta["cl_text"]
+    prefix = ctx.config.full_item_categories.get(category)
+    if not prefix:
+        return
+    if text.startswith(prefix):
+        return  # Already formatted
+    # Try searching for prefix that detected the category
+    for regex, target_category in ctx.config.full_item_categories_map.items():
+        if target_category != category:
+            continue
+        match = re.search(regex, text)
+        if not match:
+            continue
+        before_prefix = text[: match.start()]
+        if before_prefix and not before_prefix.isspace():
+            # Can't fix this: not a prefix.
+            return
+        actual_prefix = match.group().strip()
+        if not (
+            actual_prefix.startswith(("(", "{", "["))
+            and actual_prefix.endswith((")", "}", "]"))
+        ):
+            # Can't fix this: prefix is not parenthesized,
+            # can be a word in a sentence.
+            return
+        break
+    else:
+        # Can't fix this: didn't find a parenthesized prefix.
+        return
+
+    # Now we need to remove all text up until end of match, and replace it with prefix.
+    current_index = 0
+    end_index = match.end()
+    for node in item.walk():
+        if not node.token or node.type != "text":
+            continue
+        content = node.content
+        if current_index + len(content) < end_index:
+            node.token.content = ""
+            current_index += len(content)
+        else:
+            node.token.content = prefix + content[end_index - current_index:]
+            break
 
 
 def format_heading(text: str, level: int = 1):

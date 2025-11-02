@@ -1,0 +1,16 @@
+messages: []
+sections:
+- canonized_version: 1.0.0
+  parsed_version: 1.0.0
+  release_comment: ''
+  release_date: null
+  release_date_fmt: null
+  subsections:
+  - category: added
+    category_kind: KNOWN
+    sort_key: 2
+    type: CHANGES
+  type: RELEASE
+  version: 1.0.0
+  version_label: null
+  version_link: null

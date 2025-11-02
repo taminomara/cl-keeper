@@ -129,6 +129,11 @@ def test_canonize(format, version, expected):
     assert canonize_version(parse_version(version, config), config) == expected
 
 
+DEFAULT_ITEM_CATEGORIES_CONFIG = Config(
+    use_default_item_categories=True
+).process_config()
+
+
 @pytest.mark.parametrize(
     "input,config",
     [
@@ -142,21 +147,21 @@ def test_canonize(format, version, expected):
             """
             """,
             None,
-            id="only-heading",
+            id="only_heading",
         ),
         pytest.param(
             """
             ## Unreleased
             """,
             None,
-            id="unreleased-simple",
+            id="unreleased_simple",
         ),
         pytest.param(
             """
             ## [Unreleased]
             """,
             None,
-            id="unreleased-unlinked",
+            id="unreleased_unlinked",
         ),
         pytest.param(
             """
@@ -165,14 +170,14 @@ def test_canonize(format, version, expected):
             [Unreleased]: https://example.com/
             """,
             None,
-            id="unreleased-linked",
+            id="unreleased_linked",
         ),
         pytest.param(
             """
             ## something-something unreleased, maybe?
             """,
             None,
-            id="unreleased-broken",
+            id="unreleased_broken",
         ),
         pytest.param(
             """
@@ -188,7 +193,7 @@ def test_canonize(format, version, expected):
             - f
             """,
             None,
-            id="unreleased-subsections",
+            id="unreleased_subsections",
         ),
         pytest.param(
             """
@@ -202,28 +207,28 @@ def test_canonize(format, version, expected):
             ## v1.0.0
             """,
             None,
-            id="release-with-prefix",
+            id="release_with_prefix",
         ),
         pytest.param(
             """
             ## [1.0.0]
             """,
             None,
-            id="release-unlinked",
+            id="release_unlinked",
         ),
         pytest.param(
             """
             ## [1.0.0] - 2020-01-01
             """,
             None,
-            id="release-unlinked-with-date",
+            id="release_unlinked_with_date",
         ),
         pytest.param(
             """
             ## 2020-01-01 [1.0.0]
             """,
             None,
-            id="release-unlinked-with-date-before-version",
+            id="release_unlinked_with_date_before_version",
         ),
         pytest.param(
             """
@@ -231,14 +236,14 @@ def test_canonize(format, version, expected):
             [1.0.0]: https://example.com/
             """,
             None,
-            id="release-linked",
+            id="release_linked",
         ),
         pytest.param(
             """
             ## ~ 1.0.0 ~ 2020-01-01
             """,
             None,
-            id="release-with-decorations-error",
+            id="release_with_decorations_error",
         ),
         pytest.param(
             """
@@ -248,63 +253,63 @@ def test_canonize(format, version, expected):
                 version_decorations=("~ ", " ~"),
                 release_date_decorations=(" ", ""),
             ),
-            id="release-with-decorations-ok",
+            id="release_with_decorations_ok",
         ),
         pytest.param(
             """
             ## 1.0.0 - 2020-01-01
             """,
             None,
-            id="release-with-date",
+            id="release_with_date",
         ),
         pytest.param(
             """
             ## 1.0.0 - 2020-20-20
             """,
             None,
-            id="release-with-broken-date",
+            id="release_with_broken_date",
         ),
         pytest.param(
             """
             ## 2020-01-01 - 1.0.0
             """,
             None,
-            id="release-with-date-before-version",
+            id="release_with_date_before_version",
         ),
         pytest.param(
             """
             ## 1.0.0 - [YANKED]
             """,
             None,
-            id="release-with-postfix",
+            id="release_with_postfix",
         ),
         pytest.param(
             """
             ## 1.0.0 - 2020-01-01 - [YANKED]
             """,
             None,
-            id="release-with-date-and-postfix",
+            id="release_with_date_and_postfix",
         ),
         pytest.param(
             """
             ## 2020-01-01 - 1.0.0 - [YANKED]
             """,
             None,
-            id="release-with-date-before-version-and-postfix",
+            id="release_with_date_before_version_and_postfix",
         ),
         pytest.param(
             """
             ## 1.0.0 - (2020-01-01) - [YANKED]
             """,
             None,
-            id="release-with-date-and-postfix-braces",
+            id="release_with_date_and_postfix_braces",
         ),
         pytest.param(
             """
             ## 2020-01-01 - (1.0.0) - [YANKED]
             """,
             None,
-            id="release-with-date-before-version-and-postfix-braces",
+            id="release_with_date_before_version_and_postfix_braces",
         ),
         pytest.param(
             """
@@ -332,7 +337,7 @@ def test_canonize(format, version, expected):
             [0.0.0-beta3]: https://example.com/0.0.0-beta3
             """,
             None,
-            id="multiple-releases-with-sections",
+            id="multiple_releases_with_sections",
         ),
         pytest.param(
             """
@@ -362,7 +367,7 @@ def test_canonize(format, version, expected):
             [0.0.0-beta3]: https://example.com/0.0.0-beta3
             """,
             None,
-            id="first-level-heading-in-the-middle",
+            id="first_level_heading_in_the_middle",
         ),
         pytest.param(
             """
@@ -370,7 +375,7 @@ def test_canonize(format, version, expected):
             - foo
             """,
             None,
-            id="subsection-not-attached",
+            id="subsection_not_attached",
         ),
         pytest.param(
             """
@@ -379,7 +384,7 @@ def test_canonize(format, version, expected):
             - foo
             """,
             None,
-            id="subsection-format-error",
+            id="subsection_format_error",
         ),
         pytest.param(
             """
@@ -388,7 +393,7 @@ def test_canonize(format, version, expected):
             - foo
             """,
             Config(extra_change_categories={"added": "~ added ~"}),
-            id="subsection-format-ok",
+            id="subsection_format_ok",
         ),
         pytest.param(
             """
@@ -396,32 +401,189 @@ def test_canonize(format, version, expected):
             It's a me, Mario!
             """,
             None,
-            id="unrecognized-section",
+            id="unrecognized_section",
         ),
         pytest.param(
             """
             ## 1.0.0.b10
             """,
             None,
-            id="version-canonization-fail",
+            id="version_canonization_fail",
         ),
         pytest.param(
             """
             ## 1.0.0.b10
             """,
             Config(version_format=VersionFormat.PYTHON),
-            id="version-canonization-ok",
+            id="version_canonization_ok",
         ),
         pytest.param(
             """
             ## 1.0.0.b10
             """,
             Config(version_format=VersionFormat.NONE),
-            id="version-canonization-none",
+            id="version_canonization_none",
+        ),
+        pytest.param(
+            """
+            ## Unreleased
+            - [added] feature
+            """,
+            DEFAULT_ITEM_CATEGORIES_CONFIG,
+            id="item_categories_in_unversioned_trivia",
+        ),
+        pytest.param(
+            """
+            ## Unreleased
+            - added feature
+            """,
+            DEFAULT_ITEM_CATEGORIES_CONFIG,
+            id="item_categories_in_unversioned_trivia_format_error",
+        ),
+        pytest.param(
+            """
+            ## Unreleased
+            - [added] feature
+            - [bamboozled] by unknown item category
+            """,
+            DEFAULT_ITEM_CATEGORIES_CONFIG,
+            id="item_categories_in_unversioned_trivia_unknown",
+        ),
+        pytest.param(
+            """
+            ## Unreleased
+            - [added] feature
+
+            content
+
+            - [added] feature
+            """,
+            DEFAULT_ITEM_CATEGORIES_CONFIG,
+            id="item_categories_in_unversioned_trivia_multiple_change_lists",
+        ),
+        pytest.param(
+            """
+            ## Unreleased
+            ### Added
+            - [added] feature
+            """,
+            DEFAULT_ITEM_CATEGORIES_CONFIG,
+            id="item_categories_in_unversioned_sub_section",
+        ),
+        pytest.param(
+            """
+            ## Unreleased
+            ### Added
+            - added feature
+            """,
+            DEFAULT_ITEM_CATEGORIES_CONFIG,
+            id="item_categories_in_unversioned_sub_section_format_error",
+        ),
+        pytest.param(
+            """
+            ## Unreleased
+            ### Added
+            - [added] feature
+            - [bamboozled] by unknown item category
+            """,
+            DEFAULT_ITEM_CATEGORIES_CONFIG,
+            id="item_categories_in_unversioned_sub_section_unknown",
+        ),
+        pytest.param(
+            """
+            ## Unreleased
+            ### Added
+            - [added] feature
+
+            content
+
+            - [added] feature
+            """,
+            DEFAULT_ITEM_CATEGORIES_CONFIG,
+            id="item_categories_in_unversioned_sub_section_multiple_change_lists",
+        ),
+        pytest.param(
+            """
+            ## 1.0.0
+            - [added] feature
+            """,
+            DEFAULT_ITEM_CATEGORIES_CONFIG,
+            id="item_categories_in_release_trivia",
+        ),
+        pytest.param(
+            """
+            ## 1.0.0
+            - added feature
+            """,
+            DEFAULT_ITEM_CATEGORIES_CONFIG,
+            id="item_categories_in_release_trivia_format_error",
+        ),
+        pytest.param(
+            """
+            ## 1.0.0
+            - [added] feature
+            - [bamboozled] by unknown item category
+            """,
+            DEFAULT_ITEM_CATEGORIES_CONFIG,
+            id="item_categories_in_release_trivia_unknown",
+        ),
+        pytest.param(
+            """
+            ## 1.0.0
+            - [added] feature
+
+            content
+
+            - [added] feature
+            """,
+            DEFAULT_ITEM_CATEGORIES_CONFIG,
+            id="item_categories_in_release_trivia_multiple_change_lists",
+        ),
+        pytest.param(
+            """
+            ## 1.0.0
+            ### Added
+            - [added] feature
+            """,
+            DEFAULT_ITEM_CATEGORIES_CONFIG,
+            id="item_categories_in_release_sub_section",
+        ),
+        pytest.param(
+            """
+            ## 1.0.0
+            ### Added
+            - added feature
+            """,
+            DEFAULT_ITEM_CATEGORIES_CONFIG,
+            id="item_categories_in_release_sub_section_format_error",
+        ),
+        pytest.param(
+            """
+            ## 1.0.0
+            ### Added
+            - [added] feature
+            - [bamboozled] by unknown item category
+            """,
+            DEFAULT_ITEM_CATEGORIES_CONFIG,
+            id="item_categories_in_release_sub_section_unknown",
+        ),
+        pytest.param(
+            """
+            ## 1.0.0
+            ### Added
+            - [added] feature
+
+            content
+
+            - [added] feature
+            """,
+            DEFAULT_ITEM_CATEGORIES_CONFIG,
+            id="item_categories_in_release_sub_section_multiple_change_lists",
         ),
     ],
 )
 def test_parse(input: str, config, data_regression):
+
     input = textwrap.dedent(input).strip()
     ctx = Context(
         pathlib.Path("__test__"),

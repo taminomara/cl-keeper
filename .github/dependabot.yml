@@ -13,6 +13,7 @@ updates:
         - "pytest"
         - "PyYaml"
         - "sphinx_design"
+        - "sphinx-autobuild"
         - "sphinx-vhs"
         - "sybil"
         - "toml"

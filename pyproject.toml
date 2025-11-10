@@ -55,9 +55,9 @@ test = [
     "pytest-regressions==2.8.3",
 ]
 lint = [
-    "black==25.9.0",
-    "isort==6.1.0",
-    "pre-commit==4.3.0",
+    "black==25.11.0",
+    "isort==7.0.0",
+    "pre-commit==4.4.0",
 ]
 doc = [
     "sybil==9.2.0",

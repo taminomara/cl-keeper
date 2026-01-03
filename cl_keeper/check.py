@@ -3,6 +3,8 @@ from __future__ import annotations
 import re
 import typing as _t
 
+from markdown_it.tree import SyntaxTreeNode
+
 from cl_keeper.context import Context, IssueCode, IssueScope
 from cl_keeper.fix import make_link_for_section
 from cl_keeper.model import (
@@ -10,12 +12,10 @@ from cl_keeper.model import (
     ReleaseSection,
     RepoVersion,
     Section,
-    SubSection,
     SubSectionCategoryKind,
     SubSectionType,
     UnreleasedSection,
 )
-from markdown_it.tree import SyntaxTreeNode
 
 
 def check(

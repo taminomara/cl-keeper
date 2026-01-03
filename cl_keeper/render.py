@@ -34,8 +34,8 @@ def print_diff(l: str, r: str, path: pathlib.Path | Input | str):
         fromfile = "stdin"
         tofile = "stdout"
     else:
-        fromfile=f"{path}:before"
-        tofile=f"{path}:after"
+        fromfile = f"{path}:before"
+        tofile = f"{path}:after"
 
     diff = "".join(
         difflib.unified_diff(

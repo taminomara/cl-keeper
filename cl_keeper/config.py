@@ -2,16 +2,15 @@ from __future__ import annotations
 
 import enum
 import functools
+import logging
 import pathlib
 import re
-import logging
 import typing as _t
 from dataclasses import dataclass
 
+import yuio.complete
 import yuio.config
 import yuio.parse
-import yuio.complete
-
 
 _logger = logging.getLogger(__name__)
 
@@ -534,7 +533,12 @@ class GlobalConfig(yuio.config.Config):
             yuio.parse.ExistingPath(extensions=[".toml", ".yaml", ".yml"]),
         ]
         | None
-    ) = yuio.config.field(default=None, flags=["-c", "--config"], usage=yuio.OMIT)
+    ) = yuio.config.field(
+        default=None,
+        flags=["-c", "--config"],
+        usage=yuio.GROUP,
+        show_if_inherited=True,
+    )
     """
     Path to the config file.
 
@@ -550,20 +554,25 @@ class GlobalConfig(yuio.config.Config):
     ) = yuio.config.field(
         default=None,
         flags=["-i", "--input"],
-        usage=yuio.OMIT,
+        usage=yuio.GROUP,
+        show_if_inherited=True,
     )
     """
     Path to the changelog file. Pass ``-`` to read file from ``stdin``.
 
     """
 
-    strict: bool = yuio.config.field(default=False, usage=yuio.OMIT)
+    strict: bool = yuio.config.field(
+        default=False,
+        usage=yuio.GROUP,
+        show_if_inherited=True,
+    )
     """
     Increase severity of all messages by one level.
 
     """
 
-    cfg: Config = yuio.config.field(usage=yuio.OMIT)
+    cfg: Config = yuio.config.field(usage=yuio.GROUP)
     """
     Global config overrides.
 
@@ -572,6 +581,8 @@ class GlobalConfig(yuio.config.Config):
     machine_readable_diagnostics: bool = yuio.config.field(
         default=False,
         flags=["-m", "--machine-readable-diagnostics"],
+        usage=yuio.GROUP,
+        show_if_inherited=True,
     )
     """
     Print diagnostics in a machine readable format:
@@ -1221,7 +1232,7 @@ class Config(yuio.config.Config):
                     )
                     config.full_item_categories_map[regex] = category
 
-        _logger.debug("full config: %s", config)
+        _logger.debug("full config: %#+r", config)
 
         return config
 
@@ -1290,9 +1301,10 @@ def _make_auto_map_for_change_categories(change_categories: dict[str, str]):
         canon_name = name.strip().casefold()
         canon_title = title.strip().casefold()
         for item in {canon_name, canon_title}:
-            regex = _make_change_category_regex(re.escape(item))
-            if regex not in map:
-                map[regex] = name
+            if item:
+                regex = _make_change_category_regex(re.escape(item))
+                if regex not in map:
+                    map[regex] = name
     return map
 
 
@@ -1302,7 +1314,8 @@ def _make_auto_map_for_item_categories(item_categories: dict[str, str]):
         canon_name = name.strip().casefold()
         canon_title = title.strip().casefold()
         for item in {canon_name, canon_title}:
-            regex = _make_change_item_regex(re.escape(item))
-            if regex not in map:
-                map[regex] = name
+            if item:
+                regex = _make_change_item_regex(re.escape(item))
+                if regex not in map:
+                    map[regex] = name
     return map

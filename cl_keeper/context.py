@@ -105,18 +105,18 @@ class Context:
                 )
                 return
 
-            color, title = self._color_and_title(severity)
-            if not color or not title:
+            tag, title = self._tag_and_title(severity)
+            if not tag or not title:
                 continue
             msg += f" [{code.value}]"
             if pos != prev_pos:
                 self._print_source(prev_pos)
             if pos and (pos != prev_pos or title != prev_title):
-                yuio.io.info(f"<c b>{title} on line {pos[0] + 1}:</c>", color=color)
+                yuio.io.info(f"<c b>{title} on line {pos[0] + 1}:</c>", tag=tag)
             if pos:
-                yuio.io.info("  - " + msg, *args, color=color)
+                yuio.io.info("  - " + msg, *args, tag=tag)
             else:
-                yuio.io.info(f"<c b>{title}: {msg}</c>", *args, color=color)
+                yuio.io.info(f"<c b>{title}: {msg}</c>", *args, tag=tag)
             prev_pos = pos
             prev_title = title
         self._print_source(prev_pos)
@@ -135,7 +135,7 @@ class Context:
         path = self.path
         if path is Input.STDIN:
             path = path.name
-        for (msg, args, pos, code, _, severity) in self._messages:
+        for msg, args, pos, code, _, severity in self._messages:
             if args:
                 msg %= args
             if pos:
@@ -162,7 +162,7 @@ class Context:
         )
 
     @staticmethod
-    def _color_and_title(severity: IssueSeverity):
+    def _tag_and_title(severity: IssueSeverity):
         match severity:
             case IssueSeverity.ERROR:
                 return "report_error", "Error"

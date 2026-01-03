@@ -34,7 +34,7 @@ DEFAULT_ITEM_CATEGORIES_CONFIG = Config(
     extra_item_categories_map={
         r"(?im)programmed": "programmed",
     },
-).process_config()
+)
 
 
 @pytest.mark.parametrize(
@@ -802,10 +802,12 @@ def test_check(input: str, config, link_templates, data_regression):
     input = textwrap.dedent(input).strip()
     ctx = Context(
         pathlib.Path("__test__"),
+        pathlib.Path("__test__"),
         input,
-        config or Config(),
+        (config or Config()).process_config(),
         False,
         link_templates or LinkTemplates("", "", "", {}),
+        False,
     )
 
     changelog = parse(ctx)
@@ -830,10 +832,12 @@ def test_check_release_dates(data_regression):
     ).strip()
     ctx = Context(
         pathlib.Path("__test__"),
+        pathlib.Path("__test__"),
         input,
-        Config(add_release_link=False),
+        Config(add_release_link=False).process_config(),
         False,
         LinkTemplates("", "", "", {}),
+        False,
     )
 
     changelog = parse(ctx)
@@ -900,14 +904,16 @@ def test_check_tags(data_regression):
     ).strip()
     ctx = Context(
         pathlib.Path("__test__"),
+        pathlib.Path("__test__"),
         input,
         Config(
             add_release_link=False,
             add_release_date=False,
             ignore_missing_releases_before="1.0.0",
-        ),
+        ).process_config(),
         False,
         LinkTemplates("", "", "", {}),
+        False,
     )
 
     changelog = parse(ctx)
@@ -940,15 +946,17 @@ def test_override_severity(data_regression):
     ).strip()
     ctx = Context(
         pathlib.Path("__test__"),
+        pathlib.Path("__test__"),
         input,
         Config(
             severity={
                 IssueCode.MISSING_RELEASE_LINK: IssueSeverity.INFO,
                 IssueCode.MISSING_RELEASE_DATE: IssueSeverity.NONE,
             }
-        ),
+        ).process_config(),
         False,
         LinkTemplates("", "", "", {}),
+        False,
     )
 
     changelog = parse(ctx)
@@ -969,15 +977,17 @@ def test_override_severity_strict(data_regression):
     ).strip()
     ctx = Context(
         pathlib.Path("__test__"),
+        pathlib.Path("__test__"),
         input,
         Config(
             severity={
                 IssueCode.MISSING_RELEASE_LINK: IssueSeverity.INFO,
                 IssueCode.MISSING_RELEASE_DATE: IssueSeverity.NONE,
             }
-        ),
+        ).process_config(),
         True,
         LinkTemplates("", "", "", {}),
+        False,
     )
 
     changelog = parse(ctx)

@@ -410,9 +410,7 @@ def detect_items_metadata(nodes: list[SyntaxTreeNode], ctx: Context):
         if node.type == "bullet_list":
             for child in node.children:
                 detect_item_metadata(child, ctx)
-                is_changelist = (
-                    is_changelist or child.meta["cl_category"] is not None
-                )
+                is_changelist = is_changelist or child.meta["cl_category"] is not None
             if is_changelist:
                 if seen_changelist:
                     ctx.issue(
@@ -434,7 +432,9 @@ def detect_item_metadata(node: SyntaxTreeNode, ctx: Context):
             continue
         if re.search(regex, text):
             node.meta["cl_category"] = category
-            node.meta["cl_sort_key"] = ctx.config.item_categories_sort_keys.get(category)
+            node.meta["cl_sort_key"] = ctx.config.item_categories_sort_keys.get(
+                category
+            )
             node.meta["cl_text"] = text
             return
     node.meta["cl_category"] = None

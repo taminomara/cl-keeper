@@ -1,4 +1,5 @@
 import re
+
 from markdown_it.token import Token
 from markdown_it.tree import SyntaxTreeNode
 
@@ -155,7 +156,7 @@ def fix_item_heading(item: SyntaxTreeNode, ctx: Context):
             node.token.content = ""
             current_index += len(content)
         else:
-            node.token.content = prefix + content[end_index - current_index:]
+            node.token.content = prefix + content[end_index - current_index :]
             break
 
 

@@ -190,10 +190,12 @@ def test_sort(args, expected):
 def test_merge_sections(input, expected):
     ctx = Context(
         pathlib.Path(),
+        pathlib.Path(),
         textwrap.dedent(input).strip(),
-        Config(),
+        Config().process_config(),
         False,
         None,  # type: ignore
+        False,
     )
 
     changelog = parse(ctx)
@@ -203,10 +205,12 @@ def test_merge_sections(input, expected):
 
     ctx = Context(
         pathlib.Path(),
+        pathlib.Path(),
         textwrap.dedent(expected).strip(),
-        Config(),
+        Config().process_config(),
         False,
         None,  # type: ignore
+        False,
     )
 
     result = parse(ctx)

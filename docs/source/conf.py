@@ -65,7 +65,8 @@ def on_write_started(app: sphinx.application.Sphinx, builder):
                 schema, id="https://cl-keeper.readthedocs.io/en/latest/schema.json"
             ),
             indent=2,
-        )
+        ),
+        encoding="utf-8",
     )
 
 

@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import typing as _t
 
+from markdown_it.tree import SyntaxTreeNode
+
 from cl_keeper.model import Section, SubSection
 from cl_keeper.typing import Ord
-from markdown_it.tree import SyntaxTreeNode
 
 
 def sorted_sections(sections: _t.Iterable[Section]) -> list[Section]:

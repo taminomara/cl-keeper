@@ -392,7 +392,7 @@ DEFAULT_ITEM_CATEGORIES_CONFIG = Config(
             ### ~ added ~
             - foo
             """,
-            Config(extra_change_categories={"added": "~ added ~"}),
+            Config(extra_change_categories={"added": "~ added ~"}).process_config(),
             id="subsection_format_ok",
         ),
         pytest.param(
@@ -587,10 +587,12 @@ def test_parse(input: str, config, data_regression):
     input = textwrap.dedent(input).strip()
     ctx = Context(
         pathlib.Path("__test__"),
+        pathlib.Path("__test__"),
         input,
-        config or Config(),
+        config or Config().process_config(),
         False,
         None,  # type: ignore
+        False,
     )
 
     changelog = parse(ctx)

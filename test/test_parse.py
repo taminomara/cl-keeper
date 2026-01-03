@@ -583,7 +583,6 @@ DEFAULT_ITEM_CATEGORIES_CONFIG = Config(
     ],
 )
 def test_parse(input: str, config, data_regression):
-
     input = textwrap.dedent(input).strip()
     ctx = Context(
         pathlib.Path("__test__"),

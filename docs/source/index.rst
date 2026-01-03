@@ -67,3 +67,5 @@ Contents
     :caption: Links
 
     GitHub <https://github.com/taminomara/cl-keeper>
+    Issues <https://github.com/taminomara/cl-keeper/issues>
+    Changelog <https://github.com/taminomara/cl-keeper/blob/main/CHANGELOG.md>

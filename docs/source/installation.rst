@@ -8,7 +8,7 @@ Install PipX_, then install ``cl-keeper``:
 
 .. code-block:: console
 
-    sh$ pipx install cl-keeper
+    $ pipx install cl-keeper
 
 .. _PipX: https://pipx.pypa.io/stable/
 
@@ -54,4 +54,4 @@ To install them, simply run:
 
 .. code-block:: console
 
-    clk --completions
+    $ clk --completions

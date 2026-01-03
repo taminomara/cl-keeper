@@ -47,10 +47,10 @@ jobs:
 
 ## Installation
 
-Install [pipx][pipx-install]:
+Install [via pipx][pipx-install]:
 
 ```sh
-pipx install yuio
+pipx install cl-keeper
 ```
 
 [GitHub Action]: https://cl-keeper.readthedocs.io/en/stable/advanced.html#using-changelog-keeper-in-github-actions

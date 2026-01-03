@@ -21,6 +21,12 @@ to your ``.pre-commit-config.yaml``:
         - id: clk
         - id: clk-tags
 
+Then run `pre-commit autoupdate` to replace `v1` with the exact latest version:
+
+.. code-block:: console
+
+    $ pre-commit autoupdate
+
 There are two hooks available:
 
 **clk**

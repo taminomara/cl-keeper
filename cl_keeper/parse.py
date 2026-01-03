@@ -6,10 +6,8 @@ import typing as _t
 
 import mdformat.plugins
 import mdformat_footnote  # type: ignore
-import mdformat_frontmatter  # type: ignore
 import mdformat_gfm._mdformat_plugin  # type: ignore
 import mdformat_gfm_alerts
-import mdformat_tables  # type: ignore
 import packaging.version
 import semver
 from markdown_it import MarkdownIt
@@ -83,8 +81,6 @@ def build_parser() -> MarkdownIt:
     # We load all plugins manually.
     plugins = [
         ("footnote", mdformat_footnote),
-        ("frontmatter", mdformat_frontmatter),
-        ("tables", mdformat_tables),
         ("gfm_alerts", mdformat_gfm_alerts),
         ("gfm", mdformat_gfm._mdformat_plugin),
     ]

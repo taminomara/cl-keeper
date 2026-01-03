@@ -843,7 +843,7 @@ def _load_config(global_config: GlobalConfig) -> tuple[Config, GlobalConfig]:
             return config.process_config(), global_config
         try:
             data = data["tool"]["cl_keeper"]
-        except KeyError as e:
+        except KeyError:
             logger.debug(
                 "%s doesn't have section tool.cl_keeper",
                 global_config.config_path,
@@ -1157,7 +1157,7 @@ def _bump_version(
             pre = ("b", pre[1] + 1)
         elif pre and pre[0] == "rc":
             raise yuio.app.AppError(
-                f"Can't create a beta pre-release after a release candidate"
+                "Can't create a beta pre-release after a release candidate"
             )
         else:
             pre = ("b", 0)

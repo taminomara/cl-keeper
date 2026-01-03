@@ -20,7 +20,7 @@ class Sortable:
 
 
 @pytest.mark.parametrize(
-    "args,expected",
+    ("args", "expected"),
     [
         pytest.param(
             [],
@@ -85,7 +85,7 @@ def test_sort(args, expected):
 
 
 @pytest.mark.parametrize(
-    "input,expected",
+    ("input", "expected"),
     [
         pytest.param(
             """
@@ -220,7 +220,7 @@ def test_merge_sections(input, expected):
 
 
 @pytest.mark.parametrize(
-    "a,b,result",
+    ("a", "b", "result"),
     [
         pytest.param(
             """

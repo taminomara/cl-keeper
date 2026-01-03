@@ -20,6 +20,5 @@ updates:
         - "typing_extensions"
       style:
         patterns:
-        - "black"
-        - "isort"
         - "pre-commit"
+        - "ruff"

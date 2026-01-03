@@ -6,14 +6,14 @@
   scope: 1
   severity: 4
 - code: IncorrectReleaseLink
-  mag: Potentially incorrect link for release `2.0.0`
+  mag: Potentially incorrect link for release 2.0.0
   pos:
   - 3
   - 4
   scope: 1
   severity: 3
 - code: IncorrectReleaseLink
-  mag: Potentially incorrect link for release `1.0.0`
+  mag: Potentially incorrect link for release 1.0.0
   pos:
   - 1
   - 2

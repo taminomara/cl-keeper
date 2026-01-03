@@ -8,7 +8,7 @@ from cl_keeper.vcs import detect_origin
 
 
 @pytest.mark.parametrize(
-    "origin,expected",
+    ("origin", "expected"),
     [
         (None, None),
         ("https://example.com/", None),
@@ -33,9 +33,6 @@ from cl_keeper.vcs import detect_origin
         pytest.param(
             "git+https://bitbucket.org/example/test.git",
             None,
-            marks=pytest.mark.xfail(
-                reason="https://github.com/nephila/giturlparse/pull/108"
-            ),
         ),
         ("git+https://friendco.de/owner@user/repo.git", None),
     ],

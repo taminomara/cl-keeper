@@ -1,5 +1,5 @@
 - code: DuplicateChangeCategories
-  mag: Found multiple sub-sections for change category `added` in release `1.0.0`
+  mag: Found multiple sub-sections for change category `release 1.0.0` in added
   pos:
   - 4
   - 5

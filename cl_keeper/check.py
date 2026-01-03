@@ -3,6 +3,8 @@ from __future__ import annotations
 import re
 import typing as _t
 
+import yuio
+import yuio.string
 from markdown_it.tree import SyntaxTreeNode
 
 from cl_keeper.context import Context, IssueCode, IssueScope
@@ -83,7 +85,8 @@ def check_duplicates_in_subsections(section: Section, ctx: Context):
                 if subsection.category in seen_categories:
                     ctx.issue(
                         IssueCode.DUPLICATE_CHANGE_CATEGORIES,
-                        f"Found multiple sub-sections for change category `%s` in {section.what()}",
+                        "Found multiple sub-sections for change category `%s` in %s",
+                        section.what(),
                         subsection.category,
                         pos=subsection,
                     )
@@ -156,7 +159,8 @@ def check_order_in_subsection(section: Section, ctx: Context):
                 ):
                     ctx.issue(
                         IssueCode.CHANGE_CATEGORY_ORDERING,
-                        f"Change categories in {section.what()} are not ordered by preferred order",
+                        "Change categories in %s are not ordered by preferred order",
+                        section.what(),
                         pos=subsection,
                     )
                     emitted_unordered_warning = True
@@ -182,7 +186,7 @@ def check_order_in_items(items: list[SyntaxTreeNode], ctx: Context):
             if last_sort_key is not None and last_sort_key > sort_key:
                 ctx.issue(
                     IssueCode.CHANGE_LIST_ORDERING,
-                    f"List items are not ordered by preferred order",
+                    "List items are not ordered by preferred order",
                     pos=item,
                 )
                 return
@@ -246,7 +250,8 @@ def check_links(
             if section.version_link is not None:
                 ctx.issue(
                     IssueCode.UNEXPECTED_RELEASE_LINK,
-                    f"Unexpected link for {section.what()}",
+                    "Unexpected link for %s",
+                    section.what(),
                     pos=section,
                 )
         return
@@ -271,7 +276,8 @@ def check_links(
             if section.version_link is not None:
                 ctx.issue(
                     IssueCode.UNEXPECTED_RELEASE_LINK,
-                    f"Unexpected link for {section.what()}",
+                    "Unexpected link for %s",
+                    section.what(),
                     pos=section,
                 )
         else:
@@ -279,28 +285,32 @@ def check_links(
                 if can_trust_order and canonical_link:
                     ctx.issue(
                         IssueCode.MISSING_RELEASE_LINK,
-                        f"Missing link for {section.what()}, should be <c path>%s</c>",
+                        "Missing link for %s, should be <c path>%s</c>",
+                        section.what(),
                         canonical_link,
                         pos=section,
                     )
                 else:
                     ctx.issue(
                         IssueCode.MISSING_RELEASE_LINK,
-                        f"Missing link for {section.what()}",
+                        "Missing link for %s",
+                        section.what(),
                         pos=section,
                     )
             elif canonical_link and section.version_link != canonical_link:
                 if can_trust_order:
                     ctx.issue(
                         IssueCode.MISSING_RELEASE_LINK,
-                        f"Incorrect link for {section.what()}, should be <c path>%s</c>",
+                        "Incorrect link for %s, should be <c path>%s</c>",
+                        section.what(),
                         canonical_link,
                         pos=section,
                     )
                 else:
                     ctx.issue(
                         IssueCode.INCORRECT_RELEASE_LINK,
-                        f"Potentially incorrect link for {section.what()}",
+                        "Potentially incorrect link for %s",
+                        section.what(),
                         pos=section,
                     )
 
@@ -402,7 +412,7 @@ def check_section_content(sections: list[Section], ctx: Context):
 #             return
 #     ctx.issue(
 #         IssueCode.CHANGE_CATEGORY_HAS_NO_CHANGE_LISTS,
-#         f"There are no change lists in {section.what()}",
+#         "There are no change lists in %s", section.what(),
 #         pos=section,
 #     )
 #     return
@@ -420,8 +430,9 @@ def check_tags(
     if not_in_repo := releases - known_versions:
         ctx.issue(
             IssueCode.MISSING_TAG_FOR_RELEASE,
-            f"Missing tags for release{"" if len(not_in_repo) == 1 else "s"} "
-            f"{_join_more(not_in_repo)}",
+            "Missing tags for release%s %s",
+            "" if len(not_in_repo) == 1 else "s",
+            _join_more(not_in_repo),
             scope=IssueScope.EXTERNAL,
         )
     lower_bound = ctx.config.parsed_ignore_missing_releases_before
@@ -441,15 +452,15 @@ def check_tags(
     if not_in_changelog:
         ctx.issue(
             IssueCode.MISSING_RELEASE_FOR_TAG,
-            f"Missing changelog sections for "
-            f"release{"" if len(not_in_changelog) == 1 else "s"} "
-            f"{_join_more(not_in_changelog)}",
+            "Missing changelog sections for release%s %s",
+            "" if len(not_in_changelog) == 1 else "s",
+            _join_more(not_in_changelog),
             scope=IssueScope.EXTERNAL,
         )
 
 
-def _join_more(strings: _t.Collection[str]) -> str:
-    joined = ", ".join(f"`{s}`" for s in sorted(strings)[:5])
+def _join_more(strings: _t.Collection[str]) -> yuio.string.Colorable:
+    joined = yuio.string.JoinStr(sorted(strings)[:5])
     if len(strings) > 5:
-        joined += f" (+{len(strings) - 5} more)"
+        joined = yuio.string.Format("%s (+%s more)", joined, len(strings) - 5)
     return joined

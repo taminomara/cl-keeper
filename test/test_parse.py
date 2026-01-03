@@ -12,7 +12,7 @@ from cl_keeper.parse import canonize_version, parse, parse_version
 
 
 @pytest.mark.parametrize(
-    "format,version,expected",
+    ("format", "version", "expected"),
     [
         (VersionFormat.NONE, "whatever", None),
         (
@@ -72,7 +72,7 @@ def test_parse_version(format, version, expected):
 
 
 @pytest.mark.parametrize(
-    "format,version,expected",
+    ("format", "version", "expected"),
     [
         (VersionFormat.NONE, "whatever", None),
         (VersionFormat.SEMVER, "1.0.0-beta.0+12345", "1.0.0-beta.0+12345"),
@@ -135,7 +135,7 @@ DEFAULT_ITEM_CATEGORIES_CONFIG = Config(
 
 
 @pytest.mark.parametrize(
-    "input,config",
+    ("input", "config"),
     [
         pytest.param(
             """

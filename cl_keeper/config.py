@@ -1216,7 +1216,7 @@ class Config(yuio.config.Config):
             ).items():
                 if regex not in config.full_change_categories_map:
                     _logger.debug(
-                        "adding regex to change_categories_map (category=%r): %s",
+                        "adding regex to change_categories_map (category=%#r): %#r",
                         category,
                         regex,
                     )
@@ -1226,7 +1226,7 @@ class Config(yuio.config.Config):
             ).items():
                 if regex not in config.full_item_categories_map:
                     _logger.debug(
-                        "adding regex to item_categories_map (category=%r): %s",
+                        "adding regex to item_categories_map (category=%#r): %#r",
                         category,
                         regex,
                     )

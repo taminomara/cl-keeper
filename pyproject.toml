@@ -1,6 +1,6 @@
 [project]
 name = "cl-keeper"
-authors = [{name = "Tamika Nomara", email = "taminomara@gmail.com"}]
+authors = [{ name = "Tamika Nomara", email = "taminomara@gmail.com" }]
 description = "A CLI tool for keeping your changelogs tidy"
 dynamic = ["version"]
 readme = "README.md"
@@ -28,7 +28,7 @@ classifiers = [
 ]
 dependencies = [
     "yuio>=2.0.0.rc1,<3.0",
-    "giturlparse==0.12.0",
+    "giturlparse==0.13.0",
     "markdown-it-py==3.0.0",
     "mdformat==0.7.22",
     "mdformat-gfm==0.4.1",
@@ -45,9 +45,9 @@ dependencies = [
 dev = [
     "pytest-cov==7.0.0",
     "sphinx-autobuild==2025.8.25",
-    {include-group = "test"},
-    {include-group = "lint"},
-    {include-group = "doc"},
+    { include-group = "test" },
+    { include-group = "lint" },
+    { include-group = "doc" },
 ]
 test = [
     "pyright==1.1.406",
@@ -55,16 +55,8 @@ test = [
     "sybil==9.2.0",
     "pytest-regressions==2.8.3",
 ]
-lint = [
-    "black==25.9.0",
-    "isort==6.1.0",
-    "pre-commit==4.3.0",
-]
-doc = [
-    "sybil==9.2.0",
-    "furo==2025.9.25",
-    "sphinx_design==0.6.1",
-]
+lint = ["ruff==0.14.10", "pre-commit==4.3.0"]
+doc = ["sybil==9.2.0", "furo==2025.9.25", "sphinx_design==0.6.1"]
 
 [project.urls]
 Documentation = "https://cl-keeper.readthedocs.io/en/stable/"
@@ -104,6 +96,45 @@ reportUnknownArgumentType = "none"
 reportUnknownLambdaType = "none"
 reportUnnecessaryTypeIgnoreComment = "warning"
 
-[tool.isort]
-profile = "black"
-skip_gitignore = true
+[tool.ruff]
+exclude = ["examples/docs/*", "yuio/_vendor/*"]
+target-version = "py312"
+
+[tool.ruff.lint]
+typing-modules = ["yuio._typing"]
+extend-select = ["I", "INP", "T20", "PT", "RET", "SIM", "SLOT", "RUF022"]
+ignore = [
+    "E402",   # Module level import not at top of file
+    "E722",   # Do not use bare `except`
+    "E741",   # Ambiguous variable name
+    "E731",   # Do not assign a `lambda` expression, use a `def`
+    "PT015",  # Assertion is always `False`
+    "PT011",  # Too broad error type
+    "PT012",  # `pytest.raises()` block should contain a single simple statement
+    "PT017",  # Found assertion on exception `e` in `except` block
+    "RET505", # Unnecessary `else` after `return` statement
+    "RET506", # Unnecessary `else` after `raise` statement
+    "RET507", # Unnecessary `else` after `continue` statement
+    "RET508", # Unnecessary `else` after `break` statement
+    "SIM103", # Return the negated condition directly
+    "SIM105", # Use `contextlib.suppress` instead of `try`-`except`-`pass`
+    "SIM108", # Use ternary operator instead of `if`-`else`-block
+    "SIM114", # Combine `if` branches using logical `or` operator
+    "SIM118", # Use `key in dict` instead of `key in dict.keys()`
+    "T201",   # Remove print
+]
+extend-safe-fixes = [
+    "RUF022", # Sort `__all__`.
+    "PT006",  # Rewrite arguments for `pytest.mark.parametrize`.
+]
+future-annotations = true
+
+[tool.ruff.lint.per-file-ignores]
+"test/**/*" = ["T20", "I002", "SIM102", "SIM117"]
+"docs/**/*" = ["T20", "I002", "INP001"]
+
+[tool.ruff.lint.isort]
+required-imports = ["from __future__ import annotations"]
+
+[tool.ruff.format]
+docstring-code-format = true

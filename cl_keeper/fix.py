@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import re
 
 from markdown_it.token import Token

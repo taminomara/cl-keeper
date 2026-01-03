@@ -1,5 +1,5 @@
 - code: ChangeCategoryOrdering
-  mag: Change categories in release `1.0.0` are not ordered by preferred order
+  mag: Change categories in release 1.0.0 are not ordered by preferred order
   pos:
   - 4
   - 5

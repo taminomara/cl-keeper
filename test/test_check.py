@@ -38,7 +38,7 @@ DEFAULT_ITEM_CATEGORIES_CONFIG = Config(
 
 
 @pytest.mark.parametrize(
-    "input,config,link_templates",
+    ("input", "config", "link_templates"),
     [
         pytest.param(
             """

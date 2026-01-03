@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from sybil import Sybil
 from sybil.parsers.codeblock import PythonCodeBlockParser
 from sybil.parsers.doctest import DocTestParser

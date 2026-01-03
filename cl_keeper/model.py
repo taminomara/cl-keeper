@@ -6,6 +6,8 @@ import enum
 import typing as _t
 from dataclasses import dataclass
 
+import yuio
+import yuio.string
 from markdown_it import MarkdownIt
 from markdown_it.token import Token
 from markdown_it.tree import SyntaxTreeNode
@@ -52,7 +54,7 @@ class Section:
     #: Section content.
     subsections: list[SubSection]
 
-    def what(self) -> str:
+    def what(self) -> yuio.string.Colorable:
         return "trivia section"
 
     def is_trivia(self) -> bool:
@@ -108,7 +110,7 @@ class UnreleasedSection(Section):
     #: Link label attached to version string, if there was any.
     version_label: str | None
 
-    def what(self) -> str:
+    def what(self) -> yuio.string.Colorable:
         return "unreleased section"
 
 
@@ -138,8 +140,8 @@ class ReleaseSection(Section):
     #: Heading text that was found after release version and date.
     release_comment: str | None
 
-    def what(self) -> str:
-        return f"release `{self.version}`"
+    def what(self) -> yuio.string.Colorable:
+        return yuio.string.Format("release `%s`", self.version)
 
 
 class SubSectionType(enum.Enum):
@@ -208,5 +210,5 @@ class SubSection:
         for node in self.content:
             yield from node.walk()
 
-    def what(self) -> str:
-        return f"Sub-section ``` {self.category} ```"
+    def what(self) -> yuio.string.Colorable:
+        return yuio.string.Format("sub-section `%s`", self.category)

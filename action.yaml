@@ -57,7 +57,7 @@ runs:
       run: |
         echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
         echo "date=$(date --utc '+%Y-%m')" >> $GITHUB_OUTPUT
-        echo "packages_hash=${{ hashFiles(github.action_path + 'pyproject.toml') }}" >> $GITHUB_OUTPUT
+        echo "packages_hash=${{ hashFiles(format("{0}/pyproject.toml", github.action_path) }}" >> $GITHUB_OUTPUT
     - name: Restore pip cache
       id: cache
       uses: actions/cache/restore@v4

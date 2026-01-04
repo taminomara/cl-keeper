@@ -51,12 +51,33 @@ outputs:
 runs:
   using: composite
   steps:
-    - name: Install Changelog Keeper
-      uses: threeal/pipx-install-action@v1.0.0
+    - name: Prepare pip cache key
+      id: cache-key
+      shell: sh
+      run: |
+        echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
+        echo "date=$(date --utc '+%Y-%m')" >> $GITHUB_OUTPUT
+        echo "packages_hash=${{ hashFiles(github.action_path + 'pyproject.toml') }}" >> $GITHUB_OUTPUT
+    - name: Restore pip cache
+      id: cache
+      uses: actions/cache/restore@v4
       with:
-        packages: ${{ github.action_path }}
+        path: ${{ steps.cache-key.outputs.dir }}
+        key: cl-keeper-${{ steps.cache-key.outputs.packages_hash }}-${{ runner.os }}-${{ steps.cache-key.outputs.date }}
+        restore-keys: |
+          cl-keeper-${{ steps.cache-key.outputs.packages_hash }}-${{ runner.os }}-
+    - name: Install dependencies
+      shell: sh
+      run: |
+        pipx install ${{ github.action_path }}
       env:
         SETUPTOOLS_SCM_DEBUG: true
+    - name: Save pip cache
+      if: steps.cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v4
+      with:
+        path: ${{ steps.cache-key.outputs.dir }}
+        key: ${{ steps.cache.outputs.cache-primary-key }}
     - name: Run Changelog Keeper
       id: run-clk
       shell: bash

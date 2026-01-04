@@ -71,7 +71,7 @@ runs:
       run: |
         pipx install ${{ github.action_path }}
       env:
-        SETUPTOOLS_SCM_DEBUG: true
+        SETUPTOOLS_SCM_PRETEND_VERSION_FOR_CL_KEEPER: "0+action-${{ github.action_ref }}"
     - name: Save pip cache
       if: steps.cache.outputs.cache-hit != 'true'
       uses: actions/cache/save@v4

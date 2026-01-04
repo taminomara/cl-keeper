@@ -2,7 +2,6 @@ name: Changelog Keeper action
 description: Parse changelog and extract notes for a release.
 author: Tamika Nomara
 
-# Add your action's branding here. This will appear on the GitHub Marketplace.
 branding:
   icon: heart
   color: red
@@ -56,6 +55,8 @@ runs:
       uses: threeal/pipx-install-action@v1.0.0
       with:
         packages: ${{ github.action_path }}
+      env:
+        SETUPTOOLS_SCM_DEBUG: true
     - name: Run Changelog Keeper
       id: run-clk
       shell: bash

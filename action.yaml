@@ -57,15 +57,16 @@ runs:
       run: |
         echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
         echo "date=$(date --utc '+%Y-%m')" >> $GITHUB_OUTPUT
-        echo "packages_hash=${{ hashFiles(format('{0}/pyproject.toml', github.action_path)) }}" >> $GITHUB_OUTPUT
+        echo "packages_hash=$(cat ${{ github.action_path }}/pyproject.toml | sha256sum | cut -f 1 -d ' ')" >> $GITHUB_OUTPUT
     - name: Restore pip cache
       id: cache
       uses: actions/cache/restore@v4
       with:
         path: ${{ steps.cache-key.outputs.dir }}
-        key: cl-keeper-${{ steps.cache-key.outputs.packages_hash }}-${{ runner.os }}-${{ steps.cache-key.outputs.date }}
+        key: cl-keeper-${{ runner.os }}-${{ steps.cache-key.outputs.packages_hash }}-${{ steps.cache-key.outputs.date }}
         restore-keys: |
-          cl-keeper-${{ steps.cache-key.outputs.packages_hash }}-${{ runner.os }}-
+          cl-keeper-${{ runner.os }}-${{ steps.cache-key.outputs.packages_hash }}-
+          cl-keeper-${{ runner.os }}-
     - name: Install dependencies
       shell: sh
       run: |

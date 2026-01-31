@@ -171,41 +171,31 @@ Custom sub-sections with item categories
 Full list of config keys
 ------------------------
 
-.. autoconfig:: Config
-    :members:
+.. cli:autoobject:: cl_keeper.config.Config
+    :name: config
     :display-name: .cl-keeper.yaml
-    :show-flags:
-    :flag-prefix: cfg
+    :flags:
+    :flag-prefix: --cfg
 
 
 Link presets
 ------------
 
-.. autoconfig:: ReleaseLinkPreset
-    :members:
-    :display-name: ReleaseLinkPreset
+.. cli:autoobject:: cl_keeper.config.ReleaseLinkPreset
 
 
 Supported version formats
 -------------------------
 
-.. autoconfig:: VersionFormat
-    :members:
-    :display-name: VersionFormat
+.. cli:autoobject:: cl_keeper.config.VersionFormat
 
 
 List of issue codes
 -------------------
 
-.. autoconfig:: IssueCode
-    :members:
-    :display-name: IssueCode
+.. cli:autoobject:: cl_keeper.config.IssueCode
 
-.. autoconfig:: IssueSeverity
-    :members:
-    :display-name: IssueSeverity
-    :enum-by-name:
-    :enum-to-dash-case:
+.. cli:autoobject:: cl_keeper.config.IssueSeverity
 
 
 Schema

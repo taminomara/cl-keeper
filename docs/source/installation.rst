@@ -50,8 +50,4 @@ Setting up autocompletion
 -------------------------
 
 Changelog keeper comes with pre-completion scripts for Bash, Zsh, Fish, and PowerShell.
-To install them, simply run:
-
-.. code-block:: console
-
-    $ clk --completions
+To install them, simply run :cli:flag:`clk --completions`.

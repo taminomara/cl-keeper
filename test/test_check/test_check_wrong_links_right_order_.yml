@@ -1,8 +1,8 @@
 - code: MissingReleaseLink
   mag: Incorrect link for release 1.0.0, should be <c path>https://example.com/v1.0.0</c>
   pos:
-  - 3
   - 4
+  - 5
   scope: 1
   severity: 3
 - code: MissingReleaseLink

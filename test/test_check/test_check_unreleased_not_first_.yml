@@ -1,7 +1,7 @@
 - code: ReleaseOrdering
   mag: Section for unreleased changes must be first in the changelog
   pos:
-  - 3
   - 4
+  - 5
   scope: 1
   severity: 4

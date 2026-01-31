@@ -1,15 +1,15 @@
 - code: ReleaseOrdering
   mag: Sections are not ordered by release versions
   pos:
-  - 3
   - 4
+  - 5
   scope: 1
   severity: 4
 - code: IncorrectReleaseLink
   mag: Potentially incorrect link for release 2.0.0
   pos:
-  - 3
   - 4
+  - 5
   scope: 1
   severity: 3
 - code: IncorrectReleaseLink

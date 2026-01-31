@@ -30,14 +30,14 @@ Then run `pre-commit autoupdate` to replace `v1` with the exact latest version:
 There are two hooks available:
 
 **clk**
-    runs :flag:`clk fix` on your repository.
+    runs :cli:cmd:`clk fix` on your repository.
 
 **clk-tags**
-    runs :flag:`clk check-tag` before push to check whether pushed tags conform to the selected
-    :attr:`~Config.version_format`.
+    runs :cli:cmd:`clk check-tag` before push to check whether pushed tags conform to the selected
+    :cli:field:`.version_format`.
 
     Note that there is no guarantee that this hook will catch all push attempts;
-    it's best to run :flag:`clk check-tag` in CI as well.
+    it's best to run :cli:cmd:`clk check-tag` in CI as well.
 
 
 .. _ci-usage:
@@ -154,7 +154,7 @@ Here's an example of using ``taminomara/cl-keeper@v1`` in combination with
 Running Changelog Keeper from VSCode
 ------------------------------------
 
-You can configure VSCode to run :flag:`clk fix` on the current file:
+You can configure VSCode to run :cli:cmd:`clk fix` on the current file:
 
 1.  Open :guilabel:`Tasks: Open User Tasks`.
 
@@ -190,4 +190,4 @@ You can configure VSCode to run :flag:`clk fix` on the current file:
           }
         }
 
-3.  Now you can run :flag:`clk fix` using :guilabel:`Tasks: Run Task` command.
+3.  Now you can run :cli:cmd:`clk fix` using :guilabel:`Tasks: Run Task` command.

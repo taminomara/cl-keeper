@@ -53,4 +53,4 @@ def print_diff(l: str, r: str, path: pathlib.Path | Input | str):
     if not diff:
         yuio.io.success("Diff is empty")
     else:
-        yuio.io.hl(diff, syntax="diff")
+        yuio.io.hl(diff, syntax="diff", to_stdout=True)

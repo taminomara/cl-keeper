@@ -211,4 +211,7 @@ class SubSection:
             yield from node.walk()
 
     def what(self) -> yuio.string.Colorable:
-        return yuio.string.Format("sub-section `%s`", self.category)
+        if self.category:
+            return yuio.string.Format("sub-section `%s`", self.category)
+        else:
+            return yuio.string.Format("section header")

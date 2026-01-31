@@ -84,7 +84,7 @@ runs:
       shell: bash
       run: |
         echo 'data<<EOF' >> $GITHUB_OUTPUT
-        clk find ${{ inputs.version }} --json $FLAG_CONFIG $FLAG_CHANGELOG $FLAG_STRICT $FLAG_IGNORE_ERRORS >> $GITHUB_OUTPUT
+        clk find ${{ inputs.version }} --json $FLAG_CONFIG $FLAG_CHANGELOG $FLAG_STRICT $FLAG_IGNORE_ERRORS | tee /dev/stderr >> $GITHUB_OUTPUT
         echo 'EOF' >> $GITHUB_OUTPUT
       env:
         FLAG_CONFIG: ${{ inputs.config != '' && format('-c {0}', inputs.config) || '' }}

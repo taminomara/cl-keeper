@@ -1,0 +1,7 @@
+- code: ChangeCategoryHasNoChangeLists
+  mag: There are no change lists in sub-section added
+  pos:
+  - 2
+  - 3
+  scope: 1
+  severity: 3

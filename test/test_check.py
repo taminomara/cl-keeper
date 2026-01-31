@@ -87,6 +87,7 @@ DEFAULT_ITEM_CATEGORIES_CONFIG = Config(
             """
             # Changelog
             ## 1.0.0 - 2025-01-01
+            ### Added
             Content
             """,
             None,
@@ -97,6 +98,7 @@ DEFAULT_ITEM_CATEGORIES_CONFIG = Config(
             """
             # Changelog
             ## 1.0.0 - 2025-01-01
+            ### Added
             Content
             """,
             None,
@@ -112,6 +114,7 @@ DEFAULT_ITEM_CATEGORIES_CONFIG = Config(
             """
             # Changelog
             ## 1.0.0 - 2025-01-01
+            ### Added
             Content
             """,
             Config(add_release_link=False),
@@ -122,6 +125,7 @@ DEFAULT_ITEM_CATEGORIES_CONFIG = Config(
             """
             # Changelog
             ## [1.0.0] - 2025-01-01
+            ### Added
             Content
 
             [1.0.0]: https://example.com/
@@ -135,8 +139,10 @@ DEFAULT_ITEM_CATEGORIES_CONFIG = Config(
             # Changelog
             ## [Unreleased]
             ## [2.0.0] - 2025-01-01
+            ### Added
             Content
             ## [1.0.0] - 2025-01-01
+            ### Added
             Content
 
             [2.0.0]: https://example.com/
@@ -151,8 +157,10 @@ DEFAULT_ITEM_CATEGORIES_CONFIG = Config(
             """
             # Changelog
             ## [2.0.0] - 2025-01-01
+            ### Added
             Content
             ## [1.0.0] - 2025-01-01
+            ### Added
             Content
 
             [2.0.0]: https://example.com/
@@ -190,6 +198,7 @@ DEFAULT_ITEM_CATEGORIES_CONFIG = Config(
             # Changelog
             ## Unreleased
             ## [1.0.0] - 2025-01-01
+            ### Added
             Content
 
             [1.0.0]: https://example.com/
@@ -203,6 +212,7 @@ DEFAULT_ITEM_CATEGORIES_CONFIG = Config(
             # Changelog
             ## Unreleased
             ## [1.0.0] - 2025-01-01
+            ### Added
             Content
 
             [1.0.0]: https://example.com/v1.0.0
@@ -215,8 +225,10 @@ DEFAULT_ITEM_CATEGORIES_CONFIG = Config(
             """
             # Changelog
             ## [1.0.0] - 2025-01-01
+            ### Added
             Content
             ## [2.0.0] - 2025-01-01
+            ### Added
             Content
 
             [1.0.0]: https://example.com/v2.0.0..v1.0.0
@@ -230,8 +242,10 @@ DEFAULT_ITEM_CATEGORIES_CONFIG = Config(
             """
             # Changelog
             ## [2.0.0] - 2025-01-01
+            ### Added
             Content
             ## [1.0.0] - 2025-01-01
+            ### Added
             Content
 
             [2.0.0]: https://example.com/v2.0.0
@@ -245,8 +259,10 @@ DEFAULT_ITEM_CATEGORIES_CONFIG = Config(
             """
             # Changelog
             ## [1.0.0] - 2025-01-01
+            ### Added
             Content
             ## [2.0.0] - 2025-01-01
+            ### Added
             Content
 
             [2.0.0]: https://example.com/v1.0.0..v2.0.0
@@ -260,8 +276,10 @@ DEFAULT_ITEM_CATEGORIES_CONFIG = Config(
             """
             # Changelog
             ## [1.0.0] - 2025-01-01
+            ### Added
             Content
             ## [2.0.0] - 2025-01-01
+            ### Added
             Content
 
             [1.0.0]: https://example.com/
@@ -275,8 +293,10 @@ DEFAULT_ITEM_CATEGORIES_CONFIG = Config(
             """
             # Changelog
             ## [2.0.0] - 2025-01-01
+            ### Added
             Content
             ## [1.0.0] - 2025-01-01
+            ### Added
             Content
 
             [1.0.0]: https://example.com/v1.0.0..v2.0.0
@@ -290,6 +310,7 @@ DEFAULT_ITEM_CATEGORIES_CONFIG = Config(
             """
             # Changelog
             ## [1.0.0] - 2025-01-01
+            ### Added
             Content
             ## [Unreleased]
 
@@ -304,8 +325,10 @@ DEFAULT_ITEM_CATEGORIES_CONFIG = Config(
             """
             # Changelog
             ## [1.0.0] - 2025-01-01
+            ### Added
             Content
             ## [2.0.0] - 2025-01-01
+            ### Added
             Content
             ## [Unreleased]
 
@@ -360,6 +383,7 @@ DEFAULT_ITEM_CATEGORIES_CONFIG = Config(
             """
             # Changelog
             ## [1.0.0]
+            ### Added
             Content
 
             [1.0.0]: https://example.com/
@@ -372,6 +396,7 @@ DEFAULT_ITEM_CATEGORIES_CONFIG = Config(
             """
             # Changelog
             ## [1.0.0] - 2025-01-01
+            ### Added
             Content
 
             [1.0.0]: https://example.com/
@@ -384,6 +409,7 @@ DEFAULT_ITEM_CATEGORIES_CONFIG = Config(
             """
             # Changelog
             ## [1.0.0]
+            ### Added
             Content
 
             [1.0.0]: https://example.com/
@@ -396,6 +422,7 @@ DEFAULT_ITEM_CATEGORIES_CONFIG = Config(
             """
             # Changelog
             ## [1.0.0] - 2025-01-01
+            ### Added
             - Content
 
               # First level heading??
@@ -410,8 +437,10 @@ DEFAULT_ITEM_CATEGORIES_CONFIG = Config(
             """
             # Changelog
             ## [1.0.0] - 2025-01-01
+            ### Added
             - Content
             ## [1.0.0] - 2025-01-01
+            ### Added
             - Content
 
             [1.0.0]: https://example.com/
@@ -424,8 +453,10 @@ DEFAULT_ITEM_CATEGORIES_CONFIG = Config(
             """
             # Changelog
             ## [1.0.0b0] - 2025-01-01
+            ### Added
             - Content
             ## [1.0.0beta0] - 2025-01-01
+            ### Added
             - Content
 
             [1.0.0b0]: https://example.com/
@@ -439,8 +470,10 @@ DEFAULT_ITEM_CATEGORIES_CONFIG = Config(
             """
             # Changelog
             ## [1.0.0] - 2025-01-01
+            ### Added
             - Content
             ## [1.0.0] - 2025-01-01
+            ### Added
             - Content
 
             [1.0.0]: https://example.com/v1.0.0
@@ -453,8 +486,10 @@ DEFAULT_ITEM_CATEGORIES_CONFIG = Config(
             """
             # Changelog
             ## [1.0.0b0] - 2025-01-01
+            ### Added
             - Content
             ## [1.0.0beta0] - 2025-01-01
+            ### Added
             - Content
 
             [1.0.0b0]: https://example.com/v1.0.0beta0
@@ -796,6 +831,27 @@ DEFAULT_ITEM_CATEGORIES_CONFIG = Config(
             None,
             id="item_categories_in_release_sub_section_order",
         ),
+        pytest.param(
+            """
+            # Changelog
+            ## 1.0.0
+            content
+            """,
+            DEFAULT_ITEM_CATEGORIES_CONFIG,
+            None,
+            id="no_item_categories_in_release",
+        ),
+        pytest.param(
+            """
+            # Changelog
+            ## 1.0.0
+            ### Added
+            content
+            """,
+            DEFAULT_ITEM_CATEGORIES_CONFIG,
+            None,
+            id="no_item_categories_in_subsection",
+        ),
     ],
 )
 def test_check(input: str, config, link_templates, data_regression):
@@ -823,10 +879,13 @@ def test_check_release_dates(data_regression):
         """
         # Changelog
         ## 1.0.2 - 2025-01-30
+        ### Added
         Content
         ## 1.0.1 - 2025-01-20
+        ### Added
         Content
         ## 1.0.0 - 2025-01-10
+        ### Added
         Content
     """
     ).strip()
@@ -889,16 +948,22 @@ def test_check_tags(data_regression):
         """
         # Changelog
         ## 1.0.2
+        ### Added
         Content
         ## 1.0.1
+        ### Added
         Content
         ## 1.0.0-rc0
+        ### Added
         Content
         ## 1.0.0-beta0
+        ### Added
         Content
         ## 0.0.2
+        ### Added
         Content
         ## 0.0.1
+        ### Added
         Content
     """
     ).strip()
@@ -941,6 +1006,7 @@ def test_override_severity(data_regression):
         """
         # Changelog
         ## 1.0.0
+        ### Added
         Content
     """
     ).strip()
@@ -972,6 +1038,7 @@ def test_override_severity_strict(data_regression):
         """
         # Changelog
         ## 1.0.0
+        ### Added
         Content
     """
     ).strip()

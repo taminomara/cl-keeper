@@ -75,10 +75,10 @@ def fix(
         section.subsections = sorted_subsections(section.subsections)
         for subsection in reversed(section.subsections):
             if subsection.category_kind is SubSectionCategoryKind.KNOWN and (
-                heading := ctx.config.full_change_categories[subsection.category]
+                heading := ctx.config.change_categories[subsection.category]
             ):
                 subsection.heading = format_heading(heading, 3)
-            if ctx.config.full_item_categories:
+            if ctx.config.item_categories:
                 merge_changelists_in_subsection(subsection.content)
                 for changelist in subsection.content:
                     if not changelist.meta.get("cl_is_changelist"):
@@ -118,13 +118,13 @@ def fix_item_heading(item: SyntaxTreeNode, ctx: Context):
     if not category:
         return
     text: str = item.meta["cl_text"]
-    prefix = ctx.config.full_item_categories.get(category)
+    prefix = ctx.config.item_categories.get(category)
     if not prefix:
         return
     if text.startswith(prefix):
         return  # Already formatted
     # Try searching for prefix that detected the category
-    for regex, target_category in ctx.config.full_item_categories_map.items():
+    for regex, target_category in ctx.config.item_categories_map.items():
         if target_category != category:
             continue
         match = re.search(regex, text)

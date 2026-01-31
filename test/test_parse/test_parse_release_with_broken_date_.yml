@@ -1,6 +1,6 @@
 messages:
 - code: InvalidReleaseDate
-  mag: 'Incorrect release date `2020-20-20`: month must be in 1..12'
+  mag: 'Incorrect release date `2020-20-20`: month must be in 1..12, not 20'
   pos:
   - 0
   - 1

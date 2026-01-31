@@ -35,6 +35,9 @@ class IssueSeverity(enum.Enum):
 
     """
 
+    __yuio_by_name__ = True
+    __yuio_to_dash_case__ = True
+
     ERROR = 4
     """
     Error.
@@ -83,7 +86,7 @@ class IssueCode(enum.Enum):
     """
     Tag format doesn't follow the requested versioning specification.
 
-    To disable all repository checks, set :attr:`~Config.check_repo_tags` to ``False``.
+    To disable all repository checks, set :cli:field:`.check_repo_tags` to ``False``.
     """
 
     MISSING_RELEASE_FOR_TAG = "MissingReleaseForTag"
@@ -92,7 +95,7 @@ class IssueCode(enum.Enum):
 
     To suppress this error for all versions before the given one,
     set `ignore_missing_releases_before`. To disable all repository checks,
-    set :attr:`~Config.check_repo_tags` to ``False``.
+    set :cli:field:`.check_repo_tags` to ``False``.
 
     """
 
@@ -100,7 +103,7 @@ class IssueCode(enum.Enum):
     """
     Found a release that has no associated tag in the repository.
 
-    To disable all repository checks, set :attr:`~Config.check_repo_tags` to ``False``.
+    To disable all repository checks, set :cli:field:`.check_repo_tags` to ``False``.
 
     """
 
@@ -139,7 +142,7 @@ class IssueCode(enum.Enum):
     """
     Release date is missing.
 
-    :attr:`~Config.add_release_date` is ``True``, but release date is missing.
+    :cli:field:`.add_release_date` is ``True``, but release date is missing.
 
     """
 
@@ -147,7 +150,7 @@ class IssueCode(enum.Enum):
     """
     Release date should not be present.
 
-    :attr:`~Config.add_release_date` is ``False``, but release date is present.
+    :cli:field:`.add_release_date` is ``False``, but release date is present.
 
     """
 
@@ -155,7 +158,7 @@ class IssueCode(enum.Enum):
     """
     Release link is missing.
 
-    :attr:`~Config.add_release_link` is ``True``, but release link is missing.
+    :cli:field:`.add_release_link` is ``True``, but release link is missing.
 
     """
 
@@ -163,7 +166,7 @@ class IssueCode(enum.Enum):
     """
     Release link should not be present.
 
-    :attr:`~Config.add_release_link` is ``False``, but release link is present.
+    :cli:field:`.add_release_link` is ``False``, but release link is present.
 
     """
 
@@ -171,7 +174,7 @@ class IssueCode(enum.Enum):
     """
     Release date doesn't match date of the release commit.
 
-    To disable all repository checks, set :attr:`~Config.check_repo_tags` to ``False``.
+    To disable all repository checks, set :cli:field:`.check_repo_tags` to ``False``.
 
     """
 
@@ -179,8 +182,8 @@ class IssueCode(enum.Enum):
     """
     Release link is incorrect.
 
-    Release links are generated using :attr:`~Config.release_link_preset`
-    and :attr:`~Config.release_link_template`. We use order of releases from
+    Release links are generated using :cli:field:`.release_link_preset`
+    and :cli:field:`.release_link_template`. We use order of releases from
     the changelog to generate links for commit ranges.
 
     """
@@ -196,23 +199,23 @@ class IssueCode(enum.Enum):
     Section for a release is empty.
 
     To ignore empty sections prior to some version,
-    set :attr:`~Config.ignore_missing_releases_before`.
+    set :cli:field:`.ignore_missing_releases_before`.
 
     """
 
     RELEASE_HAS_NO_CHANGE_CATEGORIES = "ReleaseHasNoChangeCategories"
     """
-    There are no change categories or items in a release.
+    There are no change categories in a release.
 
     To ignore releases without change items prior to some version,
-    set :attr:`~Config.ignore_missing_releases_before`.
+    set :cli:field:`.ignore_missing_releases_before`.
 
     """
 
     CHANGE_CATEGORY_ORDERING = "ChangeCategoryOrdering"
     """
     Order of sub-sections within a release doesn't match
-    the one given in :attr:`~Config.change_categories`.
+    the one given in :cli:field:`.change_categories`.
 
     """
 
@@ -226,7 +229,7 @@ class IssueCode(enum.Enum):
     """
     Change category contains no change lists.
 
-    :attr:`~Config.item_categories` is not empty, but there are no unordered lists
+    :cli:field:`.item_categories` is not empty, but there are no unordered lists
     in a change category that contain at least one item that matches an item category.
 
     """
@@ -270,14 +273,14 @@ class IssueCode(enum.Enum):
     CHANGE_LIST_ORDERING = "ChangeListOrdering"
     """
     Order of items within a change list doesn't match the one
-    given in :attr:`~Config.item_categories`.
+    given in :cli:field:`.item_categories`.
 
     """
 
     CHANGE_LIST_ITEM_FORMAT = "ChangeListItemFormat"
     """
     A change list item doesn't start with a prefix
-    defined in :attr:`~Config.item_categories`.
+    defined in :cli:field:`.item_categories`.
 
     """
 
@@ -345,7 +348,7 @@ class ReleaseLinkPreset(enum.Enum):
     Will link releases to tags on github.
 
     To use this preset, add the ``repo`` template variable
-    to :attr:`~Config.release_link_template_vars`.
+    to :cli:field:`.release_link_template_vars`.
     It should contain url of your repository.
 
     If you're using self-hosted GitHub, you can also add the ``host``
@@ -366,7 +369,7 @@ class ReleaseLinkPreset(enum.Enum):
     Will link releases to tags on gitlab.
 
     To use this preset, add the ``repo`` template variable
-    to :attr:`~Config.release_link_template_vars`.
+    to :cli:field:`.release_link_template_vars`.
     It should contain url of your repository.
 
     If you're using self-hosted GitLab, you can also add the ``host``
@@ -423,27 +426,27 @@ class VersionFormat(enum.Enum):
           - Post-release
           - Post-release of a pre-release
 
-        * - :attr:`~VersionFormat.SEMVER`
+        * - :cli:field:`~VersionFormat.semver`
           - ``1.0.0``
           - ``1.0.0-b``, ``1.0.0-b0``, ``1.0.0-beta0``, etc.
           - not supported
           - not supported
-        * - :attr:`~VersionFormat.SEMVER_STRICT`
+        * - :cli:field:`~VersionFormat.semver-strict`
           - ``1.0.0``
           - ``1.0.0-beta0``
           - not supported
           - not supported
-        * - :attr:`~VersionFormat.PYTHON`
+        * - :cli:field:`~VersionFormat.python`
           - ``1.0.0``
           - ``1.0.0b0``, ``1.0.0-beta.0``, etc.
           - ``1.0.0post0``, ``1.0.0-rev.0``, etc.
           - ``1.0.0b1.post2``, ``1.0.0-beta.1post2``, etc.
-        * - :attr:`~VersionFormat.PYTHON_STRICT`
+        * - :cli:field:`~VersionFormat.python-strict`
           - ``1.0.0``
           - ``1.0.0b0``
           - ``1.0.0post0``
           - ``1.0.0b0.post0``
-        * - :attr:`~VersionFormat.PYTHON_SEMVER`
+        * - :cli:field:`~VersionFormat.python-semver`
           - ``1.0.0``
           - ``1.0.0-beta0``
           - ``1.0.0-post0``
@@ -496,7 +499,7 @@ class VersionFormat(enum.Enum):
 
     PYTHON_SEMVER = "python-semver"
     """
-    Python versioning specification using :attr:`~VersionFormat.SEMVER_STRICT` syntax.
+    Python versioning specification using :cli:field:`semver-strict` syntax.
 
     This schema ensures that that all versions and tags are normalized,
     and other tools that rely on semver specification can work with them.
@@ -527,6 +530,8 @@ class Input(enum.Enum):
 
 
 class GlobalConfig(yuio.config.Config):
+    __yuio_short_help__ = True
+
     config_path: (
         _t.Annotated[
             pathlib.Path,
@@ -536,11 +541,19 @@ class GlobalConfig(yuio.config.Config):
     ) = yuio.config.field(
         default=None,
         flags=["-c", "--config"],
-        usage=yuio.GROUP,
-        show_if_inherited=True,
+        usage=yuio.COLLAPSE,
     )
     """
-    Path to the config file.
+    Override path to the config file.
+
+    By default, Changelog Keeper searches for ``.cl-keeper.yaml``,
+    ``.cl-keeper.toml``, or ``pyproject.toml`` in the current directory
+    or its parents.
+
+    If :cli:flag:`--input` is given, Changelog Keeper searches for config starting from the
+    input file's directory instead.
+
+    If config can't be found, Changelog Keeper will use the default config.
 
     """
 
@@ -554,35 +567,51 @@ class GlobalConfig(yuio.config.Config):
     ) = yuio.config.field(
         default=None,
         flags=["-i", "--input"],
-        usage=yuio.GROUP,
-        show_if_inherited=True,
+        usage=yuio.COLLAPSE,
     )
     """
-    Path to the changelog file. Pass ``-`` to read file from ``stdin``.
+    Override path to the changelog file. Pass ``-`` to read file from ``stdin``.
+
+    By default, Changelog Keeper searches for config, then searches
+    for ``CHANGELOG.md`` relative to the config file's directory.
+
+    If config can't be found, Changelog Keeper searches for ``CHANGELOG.md`` in the
+    current directory instead.
 
     """
 
     strict: bool = yuio.config.field(
         default=False,
-        usage=yuio.GROUP,
-        show_if_inherited=True,
+        usage=yuio.COLLAPSE,
     )
     """
     Increase severity of all messages by one level.
 
     """
 
-    cfg: Config = yuio.config.field(usage=yuio.GROUP)
+    cfg: Config = yuio.config.field(usage=yuio.COLLAPSE, help_group=yuio.COLLAPSE)
     """
     Global config overrides.
+
+    .. if-sphinx::
+
+         See :cli:cfg:`config documentation <config>` for details, or run
+         :cli:flag:`!clk --help=all` to list all flags.
+
+    .. if-not-sphinx::
+
+         See `config documentation`__ for details, or run
+         :cli:flag:`!clk --help=all` to list all flags.
+
+         __ https://cl-keeper.readthedocs.io/en/latest/config.html#cli-config
+
 
     """
 
     machine_readable_diagnostics: bool = yuio.config.field(
         default=False,
         flags=["-m", "--machine-readable-diagnostics"],
-        usage=yuio.GROUP,
-        show_if_inherited=True,
+        usage=yuio.COLLAPSE,
     )
     """
     Print diagnostics in a machine readable format:
@@ -614,6 +643,8 @@ def _make_change_item_regex_require_braces(regexp):
 
 
 class Config(yuio.config.Config):
+    __yuio_short_help__ = True
+
     file: pathlib.Path = yuio.config.field(
         default=pathlib.Path("CHANGELOG.md"),
         parser=yuio.parse.ExistingPath(),
@@ -624,10 +655,7 @@ class Config(yuio.config.Config):
 
     """
 
-    format_wrapping: (
-        _t.Annotated[int, yuio.parse.Gt(0)]
-        | _t.Annotated[Wrapping, yuio.parse.Enum(doc_inline=True)]
-    ) = yuio.config.field(
+    format_wrapping: _t.Annotated[int, yuio.parse.Gt(0)] | Wrapping = yuio.config.field(
         default=90,
     )
     """
@@ -695,7 +723,7 @@ class Config(yuio.config.Config):
         merge=lambda l, r: {**l, **r},
     )
     """
-    Additional items that will be added to :attr:`~Config.change_categories`
+    Additional items that will be added to :cli:field:`.change_categories`
     without completely overriding it.
 
     """
@@ -708,8 +736,8 @@ class Config(yuio.config.Config):
     When processing a release, each third level heading will be matched against
     these regular expressions to figure out which section it represents. If there
     is a match, the heading content will be replaced by the one from
-    :attr:`~Config.change_categories`, and the section will be reordered to match
-    the order from :attr:`~Config.change_categories`.
+    :cli:field:`.change_categories`, and the section will be reordered to match
+    the order from :cli:field:`.change_categories`.
 
     Regular expression syntax is described in the :mod:`re` module documentation.
     Regular expressions will be compiled without flags, but you can use inline
@@ -724,20 +752,20 @@ class Config(yuio.config.Config):
         merge=lambda l, r: {**l, **r},
     )
     """
-    Additional items that will be added to :attr:`~Config.change_categories_map`
+    Additional items that will be added to :cli:field:`.change_categories_map`
     without completely overriding it.
 
     """
 
     use_default_item_categories: bool = False
     """
-    Add default lists for :attr:`~Config.item_categories`
-    and :attr:`~Config.item_categories_map`.
+    Add default lists for :cli:field:`.item_categories`
+    and :cli:field:`.item_categories_map`.
 
     """
 
     item_categories: dict[str, str] = {}
-    r"""
+    """
     Ordering and titles for individual changelog items.
 
     If you want to detect categories of individual items and sort item lists inside
@@ -745,16 +773,16 @@ class Config(yuio.config.Config):
     for situations when you want to group items by using prefixes instead
     of third-level headings.
 
-    .. seealso::
+    .. tip::
 
-        Enable :attr:`~Config.use_default_item_categories` to enable defaults for
-        :attr:`~Config.item_categories` and :attr:`~Config.item_categories_map`.
+        Enable :cli:field:`.use_default_item_categories` to enable defaults for
+        :cli:field:`.item_categories` and :cli:field:`.item_categories_map`.
 
     """
 
     extra_item_categories: dict[str, str] = {}
     """
-    Additional items that will be added to :attr:`~Config.item_categories`
+    Additional items that will be added to :cli:field:`.item_categories`
     without completely overriding it.
 
     """
@@ -766,8 +794,8 @@ class Config(yuio.config.Config):
 
     .. seealso::
 
-        Enable :attr:`~Config.use_default_item_categories` to enable defaults for
-        :attr:`~Config.item_categories` and :attr:`~Config.item_categories_map`.
+        Enable :cli:field:`.use_default_item_categories` to enable defaults for
+        :cli:field:`.item_categories` and :cli:field:`.item_categories_map`.
 
     """
 
@@ -776,7 +804,7 @@ class Config(yuio.config.Config):
         merge=lambda l, r: {**l, **r},
     )
     """
-    Additional items that will be added to :attr:`~Config.item_categories_map`
+    Additional items that will be added to :cli:field:`.item_categories_map`
     without completely overriding it.
 
     """
@@ -802,7 +830,7 @@ class Config(yuio.config.Config):
         merge=lambda l, r: l | r,
     )
     """
-    Additional items that will be added to :attr:`~Config.bump_patch_categories`
+    Additional items that will be added to :cli:field:`.bump_patch_categories`
     without completely overriding it.
 
     """
@@ -827,7 +855,7 @@ class Config(yuio.config.Config):
         merge=lambda l, r: l | r,
     )
     """
-    Additional items that will be added to :attr:`~Config.bump_minor_categories`
+    Additional items that will be added to :cli:field:`.bump_minor_categories`
     without completely overriding it.
 
     """
@@ -850,7 +878,7 @@ class Config(yuio.config.Config):
         merge=lambda l, r: l | r,
     )
     """
-    Additional items that will be added to :attr:`~Config.bump_major_categories`
+    Additional items that will be added to :cli:field:`.bump_major_categories`
     without completely overriding it.
 
     """
@@ -865,7 +893,7 @@ class Config(yuio.config.Config):
         default=("", ""),
     )
     """
-    Symbols that will be added around :attr:`~Config.unreleased_name`, but won't
+    Symbols that will be added around :cli:field:`.unreleased_name`, but won't
     be turned into a link.
 
     This value should be a tuple of two strings, first will be placed before the title,
@@ -929,10 +957,10 @@ class Config(yuio.config.Config):
     release_link_template: str | None = None
     """
     Template for a release link, formatted using Python's :meth:`str.format` method.
-    This setting overrides link from :attr:`preset <Config.release_link_preset>`.
+    This setting overrides link from :cli:field:`preset <.release_link_preset>`.
 
     The following template variables are available, in addition to
-    ones declared in :attr:`~Config.release_link_template_vars`:
+    ones declared in :cli:field:`.release_link_template_vars`:
 
     ``tag``
         Git tag for the current release.
@@ -955,10 +983,10 @@ class Config(yuio.config.Config):
     """
     Template for a link for an unreleased entry, formatted using
     Python's :meth:`str.format` method. This setting overrides link from
-    :attr:`preset <Config.release_link_preset>`.
+    :cli:field:`preset <.release_link_preset>`.
 
     The following template variables are available, in addition to
-    ones declared in :attr:`~Config.release_link_template_vars`:
+    ones declared in :cli:field:`.release_link_template_vars`:
 
     ``prev_tag``
         Git tag for the latest release.
@@ -978,10 +1006,10 @@ class Config(yuio.config.Config):
     """
     Template for a link for the first release, formatted using
     Python's :meth:`str.format` method. This setting overrides link from
-    :attr:`preset <Config.release_link_preset>`.
+    :cli:field:`preset <.release_link_preset>`.
 
     The following template variables are available, in addition to
-    ones declared in :attr:`~Config.release_link_template_vars`:
+    ones declared in :cli:field:`.release_link_template_vars`:
 
     ``tag``
         Git tag for the current release.
@@ -1025,7 +1053,7 @@ class Config(yuio.config.Config):
     """
     Versioning schema used to parse and sort tags and versions.
 
-    See :class:`VersionFormat` for details.
+    See :cli:cfg:`VersionFormat` for details.
 
     """
 
@@ -1051,7 +1079,6 @@ class Config(yuio.config.Config):
         ],
         _t.Annotated[
             IssueSeverity,
-            yuio.parse.Enum(by_name=True, to_dash_case=True),
             yuio.parse.WithMeta(desc="<severity>"),
         ],
     ] = yuio.config.field(
@@ -1066,12 +1093,12 @@ class Config(yuio.config.Config):
 
     auto_detect_maps: bool = True
     """
-    Automatically fill out :attr:`~Config.change_categories_map` and
-    :attr:`~Config.item_categories_map` based on :attr:`~Config.change_categories`
-    and :attr:`~Config.item_categories`.
+    Automatically fill out :cli:field:`.change_categories_map` and
+    :cli:field:`.item_categories_map` based on :cli:field:`.change_categories`
+    and :cli:field:`.item_categories`.
 
     Disabling this feature removes automatically generated items from
-    :attr:`~Config.change_categories_map` and :attr:`~Config.item_categories_map`,
+    :cli:field:`.change_categories_map` and :cli:field:`.item_categories_map`,
     giving you full control over which regular expressions are used to detect
     change and item categories.
 
@@ -1081,36 +1108,12 @@ class Config(yuio.config.Config):
     """
 
     @functools.cached_property
-    def full_change_categories(self):
-        full_change_categories = self.change_categories.copy()
-        full_change_categories.update(self.extra_change_categories)
-        return full_change_categories
-
-    @functools.cached_property
-    def full_change_categories_map(self):
-        full_change_categories_map = self.change_categories_map.copy()
-        full_change_categories_map.update(self.extra_change_categories_map)
-        return full_change_categories_map
-
-    @functools.cached_property
     def change_categories_sort_keys(self):
-        return {k: i for i, k in enumerate(self.full_change_categories)}
-
-    @functools.cached_property
-    def full_item_categories(self):
-        full_item_categories = self.item_categories.copy()
-        full_item_categories.update(self.extra_item_categories)
-        return full_item_categories
-
-    @functools.cached_property
-    def full_item_categories_map(self):
-        full_item_categories_map = self.item_categories_map.copy()
-        full_item_categories_map.update(self.extra_item_categories_map)
-        return full_item_categories_map
+        return {k: i for i, k in enumerate(self.change_categories)}
 
     @functools.cached_property
     def item_categories_sort_keys(self):
-        return {k: i for i, k in enumerate(self.full_item_categories)}
+        return {k: i for i, k in enumerate(self.item_categories)}
 
     @functools.cached_property
     def parsed_ignore_missing_releases_before(self):
@@ -1120,18 +1123,6 @@ class Config(yuio.config.Config):
             return None
         else:
             return parse_version(self.ignore_missing_releases_before, self)
-
-    @functools.cached_property
-    def full_bump_patch_categories(self):
-        return self.bump_patch_categories | self.extra_bump_patch_categories
-
-    @functools.cached_property
-    def full_bump_minor_categories(self):
-        return self.bump_minor_categories | self.extra_bump_minor_categories
-
-    @functools.cached_property
-    def full_bump_major_categories(self):
-        return self.bump_major_categories | self.extra_bump_major_categories
 
     def process_config(self):
         _logger.debug("processing config")
@@ -1149,41 +1140,62 @@ class Config(yuio.config.Config):
                         f"release_link_template_vars can't contain key {var!r}",
                     )
 
+        config.change_categories = config.change_categories.copy()
+        config.change_categories.update(config.extra_change_categories)
+
+        config.change_categories_map = config.change_categories_map.copy()
+        config.change_categories_map.update(config.extra_change_categories_map)
+
+        config.item_categories = config.item_categories.copy()
+        config.item_categories.update(config.extra_item_categories)
+
+        config.item_categories_map = config.item_categories_map.copy()
+        config.item_categories_map.update(config.extra_item_categories_map)
+
+        config.bump_patch_categories = config.bump_patch_categories.copy()
+        config.bump_patch_categories.update(config.extra_bump_patch_categories)
+
+        config.bump_minor_categories = config.bump_minor_categories.copy()
+        config.bump_minor_categories.update(config.extra_bump_minor_categories)
+
+        config.bump_major_categories = config.bump_major_categories.copy()
+        config.bump_major_categories.update(config.extra_bump_major_categories)
+
         # Note: using `self` instead of `config` in these checks is not an error.
         # We don't want to check categories added by `use_default_item_categories`.
         for categories, name, targets in [
             (
-                self.full_change_categories_map.values(),
+                self.change_categories_map.values(),
                 "change_categories_map",
-                [("change_categories", config.full_change_categories)],
+                [("change_categories", config.change_categories)],
             ),
             (
-                self.full_item_categories_map.values(),
+                self.item_categories_map.values(),
                 "item_categories_map",
-                [("item_categories", config.full_item_categories)],
+                [("item_categories", config.item_categories)],
             ),
             (
-                self.full_bump_patch_categories,
+                self.bump_patch_categories,
                 "bump_patch_categories",
                 [
-                    ("change_categories", config.full_change_categories),
-                    ("item_categories", config.full_item_categories),
+                    ("change_categories", config.change_categories),
+                    ("item_categories", config.item_categories),
                 ],
             ),
             (
-                self.full_bump_minor_categories,
+                self.bump_minor_categories,
                 "bump_minor_categories",
                 [
-                    ("change_categories", config.full_change_categories),
-                    ("item_categories", config.full_item_categories),
+                    ("change_categories", config.change_categories),
+                    ("item_categories", config.item_categories),
                 ],
             ),
             (
-                self.full_bump_major_categories,
+                self.bump_major_categories,
                 "bump_major_categories",
                 [
-                    ("change_categories", config.full_change_categories),
-                    ("item_categories", config.full_item_categories),
+                    ("change_categories", config.change_categories),
+                    ("item_categories", config.item_categories),
                 ],
             ),
         ]:
@@ -1212,25 +1224,25 @@ class Config(yuio.config.Config):
 
         if config.auto_detect_maps:
             for regex, category in _make_auto_map_for_change_categories(
-                config.full_change_categories
+                config.change_categories
             ).items():
-                if regex not in config.full_change_categories_map:
+                if regex not in config.change_categories_map:
                     _logger.debug(
                         "adding regex to change_categories_map (category=%#r): %#r",
                         category,
                         regex,
                     )
-                    config.full_change_categories_map[regex] = category
+                    config.change_categories_map[regex] = category
             for regex, category in _make_auto_map_for_item_categories(
-                config.full_item_categories
+                config.item_categories
             ).items():
-                if regex not in config.full_item_categories_map:
+                if regex not in config.item_categories_map:
                     _logger.debug(
                         "adding regex to item_categories_map (category=%#r): %#r",
                         category,
                         regex,
                     )
-                    config.full_item_categories_map[regex] = category
+                    config.item_categories_map[regex] = category
 
         _logger.debug("full config: %#+r", config)
 

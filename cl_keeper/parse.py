@@ -355,14 +355,14 @@ def detect_subsection_metadata(subsection: SubSection, ctx: Context):
         subsection.category_kind = SubSectionCategoryKind.UNKNOWN
         subsection.category = ""
         subsection.sort_key = None
-        if subsection.heading is None and ctx.config.full_item_categories:
+        if subsection.heading is None and ctx.config.item_categories:
             # This is a trivia section at the start of a section --
             # search for items in it as well.
             detect_items_metadata(subsection.content, ctx)
         return
 
-    for regex, category in ctx.config.full_change_categories_map.items():
-        if category not in ctx.config.full_change_categories:
+    for regex, category in ctx.config.change_categories_map.items():
+        if category not in ctx.config.change_categories:
             # This category was removed from config, there's still a mapping for it
             # inherited from default values.
             continue
@@ -372,7 +372,7 @@ def detect_subsection_metadata(subsection: SubSection, ctx: Context):
             subsection.category = category
             subsection.sort_key = ctx.config.change_categories_sort_keys.get(category)
 
-            canonical_heading = ctx.config.full_change_categories.get(category)
+            canonical_heading = ctx.config.change_categories.get(category)
             if canonical_heading and canonical_heading != heading:
                 ctx.issue(
                     IssueCode.CHANGE_CATEGORY_HEADING_FORMAT,
@@ -381,7 +381,7 @@ def detect_subsection_metadata(subsection: SubSection, ctx: Context):
                     pos=subsection.heading,
                 )
 
-            if ctx.config.full_item_categories:
+            if ctx.config.item_categories:
                 detect_items_metadata(subsection.content, ctx)
 
             return
@@ -423,8 +423,8 @@ def detect_items_metadata(nodes: list[SyntaxTreeNode], ctx: Context):
 def detect_item_metadata(node: SyntaxTreeNode, ctx: Context):
     text = _node_to_text(node)
     assert text is not None
-    for regex, category in ctx.config.full_item_categories_map.items():
-        if category not in ctx.config.full_item_categories:
+    for regex, category in ctx.config.item_categories_map.items():
+        if category not in ctx.config.item_categories:
             # This category was removed from config, there's still a mapping for it
             # inherited from default values.
             continue
@@ -461,7 +461,7 @@ _STRICT_SEMVER_TEMPLATE = re.compile(
 _PYTHON_SEMVER_TEMPLATE = re.compile(
     r"""
         ^
-        (?:(?:0|[1-9]\d*)!)?
+        (?:(?:[1-9]\d*)!)?
         (?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)
         (?:
             -(?:
@@ -477,7 +477,7 @@ _PYTHON_SEMVER_TEMPLATE = re.compile(
 _STRICT_PYTHON_TEMPLATE = re.compile(
     r"""
         ^
-        (?:(?:0|[1-9]\d*)!)?
+        (?:(?:[1-9]\d*)!)?
         (?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)
         (?:(?:a|b|rc)(?:0|[1-9]\d*))?
         (?:\.post(?:0|[1-9]\d*))?

@@ -14,6 +14,7 @@ from cl_keeper.model import (
     ReleaseSection,
     RepoVersion,
     Section,
+    SubSection,
     SubSectionCategoryKind,
     SubSectionType,
     UnreleasedSection,
@@ -170,7 +171,7 @@ def check_order_in_subsection(section: Section, ctx: Context):
 
 
 def check_order_in_item_lists(items: list[SyntaxTreeNode], ctx: Context):
-    if not ctx.config.full_item_categories:
+    if not ctx.config.item_categories:
         return
     for item in items:
         if not item.meta.get("cl_is_changelist"):
@@ -205,7 +206,7 @@ def check_items(sections: list[Section], ctx: Context):
 
 
 def check_headings_in_item_lists(items: list[SyntaxTreeNode], ctx: Context):
-    if not ctx.config.full_item_categories:
+    if not ctx.config.item_categories:
         return
     for changelist in items:
         if not changelist.meta.get("cl_is_changelist"):
@@ -224,7 +225,7 @@ def check_item_heading(item: SyntaxTreeNode, ctx: Context):
         )
         return
     text: str = item.meta["cl_text"]
-    prefix = ctx.config.full_item_categories.get(category)
+    prefix = ctx.config.item_categories.get(category)
     if not prefix:
         return
     if not text.startswith(prefix):
@@ -377,18 +378,19 @@ def check_section_content(sections: list[Section], ctx: Context):
                     pos=node,
                 )
         if release := section.as_release():
-            if (
-                not release.subsections
-                and release.parsed_version is not None
-                and (lower_bound is None or release.parsed_version >= lower_bound)
-                and (regex_bound is None or not re.search(regex_bound, release.version))
+            if release.parsed_version is not None and (
+                (lower_bound is not None and release.parsed_version < lower_bound)
+                or (regex_bound is not None and re.search(regex_bound, release.version))
             ):
+                continue
+            if not release.subsections:
                 ctx.issue(
                     IssueCode.EMPTY_RELEASE,
                     "Section for release `%s` is empty",
                     release.version,
                     pos=section,
                 )
+                continue
             for subsection in release.subsections:
                 if not subsection.content:
                     ctx.issue(
@@ -396,26 +398,47 @@ def check_section_content(sections: list[Section], ctx: Context):
                         "Sub-section `%s` for release `%s` is empty",
                         subsection.category,
                         release.version,
-                        pos=section,
+                        pos=subsection,
                     )
                     break
+                elif ctx.config.item_categories:
+                    if (
+                        subsection.type is SubSectionType.TRIVIA
+                        and subsection.heading is None
+                        and len(section.subsections) == 1
+                    ):
+                        check_category_contains_change_items(
+                            section, subsection.content, ctx
+                        )
+                    elif subsection.category_kind is SubSectionCategoryKind.KNOWN:
+                        check_category_contains_change_items(
+                            subsection, subsection.content, ctx
+                        )
+            if not ctx.config.item_categories and not any(
+                subsection.category_kind is SubSectionCategoryKind.KNOWN
+                for subsection in release.subsections
+            ):
+                ctx.issue(
+                    IssueCode.RELEASE_HAS_NO_CHANGE_CATEGORIES,
+                    "Release `%s` has no sub-sections with known change categories",
+                    release.version,
+                    pos=section,
+                )
 
 
-# def _check_category_contains_change_items(
-#     section: Section | SubSection, items: list[SyntaxTreeNode], ctx: Context
-# ):
-#     if not items:
-#         # Empty categories are detected separately.
-#         return
-#     for changelist in items:
-#         if changelist.meta.get("cl_is_changelist"):
-#             return
-#     ctx.issue(
-#         IssueCode.CHANGE_CATEGORY_HAS_NO_CHANGE_LISTS,
-#         "There are no change lists in %s", section.what(),
-#         pos=section,
-#     )
-#     return
+def check_category_contains_change_items(
+    section: Section | SubSection, items: list[SyntaxTreeNode], ctx: Context
+):
+    for changelist in items:
+        if changelist.meta.get("cl_is_changelist"):
+            return
+    ctx.issue(
+        IssueCode.CHANGE_CATEGORY_HAS_NO_CHANGE_LISTS,
+        "There are no change lists in %s",
+        section.what(),
+        pos=section,
+    )
+    return
 
 
 def check_tags(
@@ -460,7 +483,9 @@ def check_tags(
 
 
 def _join_more(strings: _t.Collection[str]) -> yuio.string.Colorable:
-    joined = yuio.string.JoinStr(sorted(strings)[:5])
     if len(strings) > 5:
-        joined = yuio.string.Format("%s (+%s more)", joined, len(strings) - 5)
+        joined = yuio.string.JoinStr(sorted(strings)[:4])
+        joined = yuio.string.Format("%s (+%s more)", joined, len(strings) - 4)
+    else:
+        joined = yuio.string.JoinStr(sorted(strings))
     return joined

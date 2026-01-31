@@ -27,7 +27,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "yuio==2.0.0",
+    "yuio>=2.0.0,<3",
     "giturlparse==0.13.0",
     "markdown-it-py==4.0.0",
     "mdformat==1.0.0",

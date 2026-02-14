@@ -224,7 +224,8 @@ def bump(
         | str
         | None
         | yuio.git.Tag
-    ) = yuio.app.positional(default=None),
+    ) = None,
+    /,
     #: Create an alpha pre-release.
     #:
     #: .. cut-if-not-sphinx::
@@ -565,7 +566,8 @@ def find(
     #: :cli:field:`.tag_prefix`, in which case the prefix is stripped.
     version: (
         _t.Annotated[FindMode, yuio.parse.WithMeta(desc="query")] | str | yuio.git.Tag
-    ) = yuio.app.positional(),
+    ),
+    /,
     #: Produce result even if errors are detected.
     ignore_errors: bool = False,
     #: Print data in JSON format.
@@ -797,7 +799,8 @@ the following fields:
 @main.subcommand
 def check_tag(
     #: Full name of the tag to check.
-    tag: yuio.git.Tag | str = yuio.app.positional(),
+    tag: yuio.git.Tag | str,
+    /,
 ):
     """
     Check if a git tag conforms to the versioning specification.
@@ -853,7 +856,9 @@ def check_tag(
 
 @main.subcommand(help=yuio.DISABLED)
 def pre_commit_check(
-    diff: bool = False, changed_files: set[pathlib.Path] = yuio.app.positional()
+    changed_files: set[pathlib.Path],
+    /,
+    diff: bool = False,
 ):
     """
     Same as :cli:cmd:`clk fix`, but expects list of changed files as command line

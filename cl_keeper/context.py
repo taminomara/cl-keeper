@@ -99,9 +99,8 @@ class Context:
                 self._print_source(prev_pos)
                 skipped = len(self._messages) - 50
                 yuio.io.error(
-                    "<c b>+ %s more message%s skipped.</c>",
-                    skipped,
-                    "" if skipped == 1 else "s",
+                    "<c b>+ %s skipped.</c>",
+                    yuio.io.Plural(skipped, "1 more message", "{n} more messages"),
                 )
                 return
 

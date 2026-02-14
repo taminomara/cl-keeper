@@ -453,9 +453,9 @@ def check_tags(
     if not_in_repo := releases - known_versions:
         ctx.issue(
             IssueCode.MISSING_TAG_FOR_RELEASE,
-            "Missing tags for release%s %s",
-            "" if len(not_in_repo) == 1 else "s",
-            _join_more(not_in_repo),
+            "Missing tags for %s %s",
+            yuio.string.Plural(len(not_in_repo), "release"),
+            yuio.string.JoinStr(not_in_repo, limit=5),
             scope=IssueScope.EXTERNAL,
         )
     lower_bound = ctx.config.parsed_ignore_missing_releases_before
@@ -475,17 +475,8 @@ def check_tags(
     if not_in_changelog:
         ctx.issue(
             IssueCode.MISSING_RELEASE_FOR_TAG,
-            "Missing changelog sections for release%s %s",
-            "" if len(not_in_changelog) == 1 else "s",
-            _join_more(not_in_changelog),
+            "Missing changelog sections for %s %s",
+            yuio.string.Plural(len(not_in_changelog), "release"),
+            yuio.string.JoinStr(not_in_changelog, limit=5),
             scope=IssueScope.EXTERNAL,
         )
-
-
-def _join_more(strings: _t.Collection[str]) -> yuio.string.Colorable:
-    if len(strings) > 5:
-        joined = yuio.string.JoinStr(sorted(strings)[:4])
-        joined = yuio.string.Format("%s (+%s more)", joined, len(strings) - 4)
-    else:
-        joined = yuio.string.JoinStr(sorted(strings))
-    return joined

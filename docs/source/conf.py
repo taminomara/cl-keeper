@@ -51,7 +51,7 @@ html_theme_options = {
 }
 
 
-def on_write_started(app: sphinx.application.Sphinx, builder):
+def on_write_started(app: sphinx.application.Sphinx, builder: sphinx.builders.Builder):
     if not isinstance(builder, sphinx.builders.html.StandaloneHTMLBuilder):
         return
 

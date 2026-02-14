@@ -419,14 +419,14 @@ def bump(
 
     result = _render(changelog, ctx)
 
-    if dry_run or diff:
-        _print_diff(original, result, ctx.path)
     if not dry_run:
         yuio.io.success("Changelog successfully updated")
         if ctx.path is Input.STDIN:
             print(result, end="")
         else:
             ctx.path.write_text(result, encoding="utf-8")
+    if commit or dry_run or diff:
+        _print_diff(original, result, ctx.path)
 
     if commit:
         yuio.io.heading("Commit")
@@ -438,19 +438,33 @@ def bump(
         repo = yuio.git.Repo(ctx.root)
         repo.git("add", str(ctx.path))
         repo.print_status()
-        yuio.io.info(
-            "You can take a look around and make any changes before proceeding.\n"
-            "Alternatively, you can cancel now and make a release commit later.\n"
-        )
-        ok = yuio.io.ask[bool](
-            "Proceed with commit and tag?", default=False, default_non_interactive=True
-        )
+        ok = None
+        while ok is None:
+            yuio.io.info(
+                "You can start a shell, take a look around, and make any changes before proceeding.\n"
+                "Alternatively, you can cancel now and make a release commit later.\n"
+            )
+            ok = yuio.io.ask[bool | _t.Literal["shell"]](
+                "Proceed with commit and tag?",
+                default=False,
+                default_non_interactive=True,
+            )
+            if ok == "shell":
+                yuio.io.hr()
+                yuio.io.success(
+                    "Starting an interactive shell. "
+                    "Press <c kbd>Ctrl+D</c> to exit and proceed."
+                )
+                yuio.io.shell(prompt_marker="(clk bump)")
+                yuio.io.hr()
+                ok = None
+
         message = f"Release {version}"
         if not ok:
             raise yuio.app.AppError(
                 yuio.io.Md(
                     f"""
-                    Commit canceled\v
+                    Commit canceled\\
                     Use this command to commit changes:
 
                     ```sh

@@ -529,6 +529,11 @@ class Input(enum.Enum):
     STDIN = "-"
 
 
+class Output(enum.Enum):
+    #: Write contents to `stdout`.
+    STDOUT = "-"
+
+
 class GlobalConfig(yuio.config.Config):
     __yuio_short_help__ = True
 

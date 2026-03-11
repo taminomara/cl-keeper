@@ -83,8 +83,9 @@ runs:
       id: run-clk
       shell: bash
       run: |
+        clk find ${{ inputs.version }} --color=true --json -o /tmp/changelog.json $FLAG_CONFIG $FLAG_CHANGELOG $FLAG_STRICT $FLAG_IGNORE_ERRORS
         echo 'data<<EOF' >> $GITHUB_OUTPUT
-        clk find ${{ inputs.version }} --color=true --json $FLAG_CONFIG $FLAG_CHANGELOG $FLAG_STRICT $FLAG_IGNORE_ERRORS | tee /dev/stderr >> $GITHUB_OUTPUT
+        cat /tmp/changelog.json | tee /dev/stderr >> $GITHUB_OUTPUT
         echo 'EOF' >> $GITHUB_OUTPUT
       env:
         FLAG_CONFIG: ${{ inputs.config != '' && format('-c {0}', inputs.config) || '' }}

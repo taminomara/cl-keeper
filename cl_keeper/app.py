@@ -29,6 +29,7 @@ from cl_keeper.config import (
     GlobalConfig,
     Input,
     LinkTemplates,
+    Output,
     VersionFormat,
 )
 from cl_keeper.context import Context, IssueCode, IssueScope
@@ -572,6 +573,10 @@ def find(
     ignore_errors: bool = False,
     #: Print data in JSON format.
     format_json: bool = yuio.app.field(default=False, flags="--json"),
+    #: Where to write results. Pass ``-`` to write to ``stdout``.
+    output: Output | pathlib.Path = yuio.app.field(
+        default=Output.STDOUT, flags=["-o", "--output"]
+    ),
 ):
     """
     Find a changelog entry for a given release version.
@@ -647,6 +652,14 @@ def find(
             )
 
     if found is not None:
+        if output is Output.STDOUT:
+            ch = yuio.io.MessageChannel(to_stdout=True)
+        else:
+            output_stream = open(output, "w", encoding="utf-8")  # noqa: SIM115
+            ch = yuio.io.MessageChannel(
+                term=yuio.term.get_term_from_stream(output_stream)
+            )
+
         tokens = found.to_tokens(include_heading=False)
         if format_json:
             found_version = None
@@ -688,11 +701,9 @@ def find(
                 "isPostRelease": is_post_release,
                 "isUnreleased": found.is_unreleased(),
             }
-            yuio.io.hl(
-                json.dumps(data, indent="  ") + "\n", syntax="json", to_stdout=True
-            )
+            ch.hl(json.dumps(data, indent="  ") + "\n", syntax="json")
         else:
-            print(_render(changelog, ctx, tokens, disable_wrapping=True), end="")
+            ch.raw(_render(changelog, ctx, tokens, disable_wrapping=True))
     else:
         raise yuio.app.AppError("Can't find changelog entry for version `%s`", version)
 

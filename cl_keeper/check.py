@@ -455,7 +455,7 @@ def check_tags(
             IssueCode.MISSING_TAG_FOR_RELEASE,
             "Missing tags for %s %s",
             yuio.string.Plural(len(not_in_repo), "release"),
-            yuio.string.JoinStr(not_in_repo, limit=5),
+            yuio.string.JoinStr(sorted(not_in_repo), limit=5),
             scope=IssueScope.EXTERNAL,
         )
     lower_bound = ctx.config.parsed_ignore_missing_releases_before

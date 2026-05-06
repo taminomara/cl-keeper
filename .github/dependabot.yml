@@ -7,18 +7,43 @@ updates:
     groups:
       dev:
         patterns:
-        - "furo"
-        - "pyright"
-        - "pytest-cov"
-        - "pytest"
-        - "PyYaml"
-        - "sphinx_design"
-        - "sphinx-autobuild"
-        - "sphinx-vhs"
-        - "sybil"
-        - "toml"
-        - "typing_extensions"
+          - "furo"
+          - "giturlparse"
+          - "markdown-it-py"
+          - "mdformat"
+          - "mdformat-gfm"
+          - "mdformat_footnote"
+          - "mdformat_gfm_alerts"
+          - "packaging"
+          - "pyright"
+          - "pytest-cov"
+          - "pytest-regressions"
+          - "pytest"
+          - "PyYAML"
+          - "semver"
+          - "sphinx_design"
+          - "sphinx-autobuild"
+          - "sybil"
+          - "tox"
+          - "tox-uv"
+          - "yuio"
       style:
         patterns:
-        - "pre-commit"
-        - "ruff"
+          - "prek"
+          - "ruff"
+  - package-ecosystem: "pre-commit"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      pre-commit:
+        patterns:
+          - "*"
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      gh-actions:
+        patterns:
+          - "*"

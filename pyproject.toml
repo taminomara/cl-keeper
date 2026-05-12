@@ -41,20 +41,33 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "pytest-cov==7.1.0",
-    "sphinx-autobuild==2025.8.25",
-    { include-group = "test" },
-    { include-group = "lint" },
+    { include-group = "ci" },
     { include-group = "doc" },
+    { include-group = "lint" },
+    { include-group = "test" },
 ]
 test = [
     "pyright==1.1.408",
+    "pytest-cov==7.0.0",
+    "pytest-regressions==2.9.1",
     "pytest==9.0.2",
     "sybil==9.3.0",
-    "pytest-regressions==2.8.3",
 ]
-lint = ["ruff==0.14.10", "pre-commit==4.5.1"]
-doc = ["sybil==9.3.0", "furo==2025.12.19", "sphinx_design==0.6.1"]
+doc = [
+    "furo==2025.12.19",
+    "sphinx-autobuild==2025.8.25",
+    "sphinx_design==0.7.0",
+    "sybil==9.3.0",
+]
+lint = [
+    "prek==0.3.8",
+    "ruff==0.15.9",
+]
+ci = [
+    "pytest-cov==7.0.0",
+    "tox==4.34.1",
+    "tox-uv==1.29.0",
+]
 
 [project.urls]
 Documentation = "https://cl-keeper.readthedocs.io/en/stable/"
@@ -74,16 +87,14 @@ requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2", "wheel>=0.40"]
 [tool.setuptools_scm]
 write_to = "cl_keeper/_version.py"
 
-[tool.pytest.ini_options]
-minversion = "7.0"
-addopts = ["--strict-markers", "-p no:doctest"]
-testpaths = ["test", "cl_keeper", "docs"]
-
 [tool.pyright]
 include = ["cl_keeper"]
-exclude = ["**/__pycache__"]
+exclude = [
+    "**/__pycache__",
+    "cl_keeper/_version.py",
+]
 typeCheckingMode = "strict"
-pythonVersion = "3.12"
+pythonVersion = "3.14"
 pythonPlatform = "All"
 
 reportMissingParameterType = "none"
@@ -92,14 +103,19 @@ reportUnknownVariableType = "none"
 reportUnknownMemberType = "none"
 reportUnknownArgumentType = "none"
 reportUnknownLambdaType = "none"
+reportUnnecessaryIsInstance = "none"
 reportUnnecessaryTypeIgnoreComment = "warning"
+reportPrivateUsage = "none"
+reportUnusedFunction = "none"
+reportConstantRedefinition = "none"
+reportRedeclaration = "none"
+reportDeprecated = "none"
+deprecateTypingAliases = true
 
 [tool.ruff]
-exclude = ["examples/docs/*", "yuio/_vendor/*"]
 target-version = "py312"
 
 [tool.ruff.lint]
-typing-modules = ["yuio._typing"]
 extend-select = ["I", "INP", "T20", "PT", "RET", "SIM", "SLOT", "RUF022"]
 ignore = [
     "E402",   # Module level import not at top of file
@@ -119,7 +135,6 @@ ignore = [
     "SIM108", # Use ternary operator instead of `if`-`else`-block
     "SIM114", # Combine `if` branches using logical `or` operator
     "SIM118", # Use `key in dict` instead of `key in dict.keys()`
-    "T201",   # Remove print
 ]
 extend-safe-fixes = [
     "RUF022", # Sort `__all__`.
@@ -136,3 +151,6 @@ required-imports = ["from __future__ import annotations"]
 
 [tool.ruff.format]
 docstring-code-format = true
+
+[tool.uv]
+default-groups = ["dev"]

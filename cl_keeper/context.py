@@ -141,7 +141,9 @@ class Context:
                 pos = pos[0] + 1
             else:
                 pos = ""
-            print(f"{path}:{pos}:{severity.name}:{code.value}:{msg.replace('\n', ' ')}")
+            print(  # noqa: T201
+                f"{path}:{pos}:{severity.name}:{code.value}:{msg.replace('\n', ' ')}"
+            )
 
     def _print_source(self, pos: tuple[int, int] | None):
         if pos:

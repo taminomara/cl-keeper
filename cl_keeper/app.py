@@ -168,7 +168,7 @@ def fix(
     elif not dry_run:
         yuio.io.success("Changelog successfully fixed")
         if ctx.path is Input.STDIN:
-            print(result, end="")
+            print(result, end="")  # noqa: T201
         else:
             ctx.path.write_text(result, encoding="utf-8")
 
@@ -424,7 +424,7 @@ def bump(
     if not dry_run:
         yuio.io.success("Changelog successfully updated")
         if ctx.path is Input.STDIN:
-            print(result, end="")
+            print(result, end="")  # noqa: T201
         else:
             ctx.path.write_text(result, encoding="utf-8")
     if commit or dry_run or diff:

@@ -16,7 +16,7 @@ jobs:
       link: ${{ steps.metadata.outputs.link }}
     steps:
       - name: Checkout source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - name: Generate release metadata
@@ -34,7 +34,7 @@ jobs:
           version: ${{ steps.metadata.outputs.version }}
           strict: true
       - name: Set up python 3.13
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
           python-version: 3.13
       - name: Install build
@@ -44,7 +44,7 @@ jobs:
         run: |
           python3 -m build .
       - name: Upload the build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: python-package-distributions
           path: dist/
@@ -62,17 +62,17 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         if: matrix.os != 'macos-latest'
         with:
           python-version: "3.13"
           architecture: "x64"
       - name: Setup Python for ARM
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         if: matrix.os == 'macos-latest'
         with:
           python-version: "3.13"
@@ -90,7 +90,7 @@ jobs:
           deployment: true
           output-file: clk-${{ runner.os }}-${{ runner.arch }}${{ runner.os == 'windows-latest' && '.exe' || '' }}
       - name: Upload the build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: build-${{ runner.os }}-${{ runner.arch }}
           path: build/clk-*
@@ -109,7 +109,7 @@ jobs:
       id-token: write
     steps:
       - name: Download build artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: python-package-distributions
           path: dist/
@@ -129,13 +129,13 @@ jobs:
       contents: write
     steps:
       - name: Download binary builds
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: build-*
           path: build/
           merge-multiple: true
       - name: Create GitHub release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           prerelease: ${{ fromJSON(needs.build.outputs.is-pre-release) }}
           draft: ${{ fromJSON(needs.build.outputs.is-unreleased) }}
@@ -168,11 +168,11 @@ jobs:
         env:
           DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
       - name: Checkout source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - name: Set up python 3.13
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
           python-version: 3.13
       - name: Update pip

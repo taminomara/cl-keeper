@@ -50,6 +50,19 @@ _DATE_RE = re.compile(
 )
 
 
+def _make_release_date(
+    year: int, month: int, day: int
+) -> tuple[datetime.date | None, str | None]:
+    if not 1 <= month <= 12:
+        return None, f"month must be in 1..12 (got {month})"
+    if not 1 <= day <= 31:
+        return None, f"day must be in 1..31 (got {day})"
+    try:
+        return datetime.date(year, month, day), None
+    except ValueError:
+        return None, "invalid date"
+
+
 def parse(ctx: Context) -> Changelog:
     """
     Parse a changelog.
@@ -225,19 +238,16 @@ def create_section(
         release_date_fmt = None
     else:
         release_date_fmt = date_match.group()
-        try:
-            release_date = datetime.date(
-                year=int(date_match.group("year")),
-                month=int(date_match.group("month")),
-                day=int(date_match.group("day")),
-            )
-        except ValueError as e:
-            release_date = None
+        year = int(date_match.group("year"))
+        month = int(date_match.group("month"))
+        day = int(date_match.group("day"))
+        release_date, reason = _make_release_date(year, month, day)
+        if reason is not None:
             ctx.issue(
                 IssueCode.INVALID_RELEASE_DATE,
                 "Incorrect release date `%s`: %s",
                 release_date_fmt,
-                e,
+                reason,
                 pos=heading,
             )
 

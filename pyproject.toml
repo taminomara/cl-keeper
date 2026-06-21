@@ -28,7 +28,7 @@ classifiers = [
 ]
 dependencies = [
     "yuio>=2.1.0,<3",
-    "giturlparse==0.14.0",
+    "giturlparse==0.15.0",
     "markdown-it-py==4.2.0",
     "mdformat==1.0.0",
     "mdformat-gfm==1.0.0",
@@ -50,7 +50,7 @@ test = [
     "pyright==1.1.410",
     "pytest-cov==7.1.0",
     "pytest-regressions==2.11.0",
-    "pytest==9.1.0",
+    "pytest==9.1.1",
     "sybil==10.1.0",
 ]
 doc = [

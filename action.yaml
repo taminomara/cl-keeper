@@ -60,7 +60,7 @@ runs:
         echo "packages_hash=$(cat ${{ github.action_path }}/pyproject.toml | sha256sum | cut -f 1 -d ' ')" >> $GITHUB_OUTPUT
     - name: Restore pip cache
       id: cache
-      uses: actions/cache/restore@v5
+      uses: actions/cache/restore@v6
       with:
         path: ${{ steps.cache-key.outputs.dir }}
         key: cl-keeper-${{ runner.os }}-${{ steps.cache-key.outputs.packages_hash }}-${{ steps.cache-key.outputs.date }}
@@ -75,7 +75,7 @@ runs:
         SETUPTOOLS_SCM_PRETEND_VERSION_FOR_CL_KEEPER: "0+action-${{ github.action_ref || '0' }}"
     - name: Save pip cache
       if: steps.cache.outputs.cache-hit != 'true'
-      uses: actions/cache/save@v5
+      uses: actions/cache/save@v6
       with:
         path: ${{ steps.cache-key.outputs.dir }}
         key: ${{ steps.cache.outputs.cache-primary-key }}
